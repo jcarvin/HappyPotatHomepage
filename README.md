@@ -23,7 +23,7 @@ A potato-themed homepage for the fictional company "Happy Potat :)" built with R
 
 ### Prerequisites
 
-- Node.js 18+ 
+- Node.js 18+
 - npm or yarn
 
 ### Installation
@@ -124,7 +124,7 @@ This area is specifically designed for embedding and testing external review com
 ### Colors
 The project uses CSS custom properties for easy theming:
 - Primary brown: `#8b4513`
-- Secondary brown: `#d2691e` 
+- Secondary brown: `#d2691e`
 - Background gradients: Wheat to beige tones
 
 ### Content
