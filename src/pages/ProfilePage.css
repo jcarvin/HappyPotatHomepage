@@ -1,0 +1,245 @@
+.profile-page {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  padding: 2rem 1rem;
+  background: linear-gradient(135deg, #F5DEB3 0%, #DEB887 100%);
+  z-index: 1000;
+  overflow-y: auto;
+}
+
+.profile-container {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.profile-card {
+  background: white;
+  border-radius: 16px;
+  padding: 2.5rem;
+  box-shadow: 0 20px 60px rgba(139, 69, 19, 0.3);
+  border: 2px solid #DEB887;
+}
+
+.profile-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.profile-header h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #8B4513;
+  margin: 0;
+}
+
+.profile-header h1::before {
+  content: '🥔 ';
+}
+
+.back-button {
+  background: none;
+  border: 1px solid #e2e8f0;
+  color: #4a5568;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.back-button:hover {
+  background: #f7fafc;
+  border-color: #cbd5e0;
+}
+
+.profile-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.info-item label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #718096;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.info-item p {
+  font-size: 1rem;
+  color: #2d3748;
+  margin: 0;
+  padding: 0.75rem 1rem;
+  background: #f7fafc;
+  border-radius: 8px;
+}
+
+.api-token,
+.user-id {
+  font-family: 'Courier New', monospace;
+  font-size: 0.9rem;
+  word-break: break-all;
+}
+
+.button-group {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.edit-button,
+.save-button {
+  flex: 1;
+  padding: 0.875rem 1.5rem;
+  background: linear-gradient(135deg, #8B4513, #A0522D);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.edit-button:hover,
+.save-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(139, 69, 19, 0.3);
+}
+
+.edit-button:active,
+.save-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.signout-button,
+.cancel-button {
+  flex: 1;
+  padding: 0.875rem 1.5rem;
+  background: white;
+  color: #e53e3e;
+  border: 2px solid #e53e3e;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.signout-button:hover,
+.cancel-button:hover:not(:disabled) {
+  background: #fff5f5;
+}
+
+.profile-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-group label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #8B4513;
+}
+
+.form-group input {
+  padding: 0.75rem 1rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.2s;
+  background: white;
+  color: #2d3748;
+}
+
+.form-group input::placeholder {
+  color: #a0aec0;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #8B4513;
+  box-shadow: 0 0 0 3px rgba(139, 69, 19, 0.1);
+}
+
+.form-group input:disabled {
+  background-color: #f7fafc;
+  cursor: not-allowed;
+}
+
+.disabled-input {
+  background-color: #f7fafc !important;
+  color: #a0aec0;
+}
+
+.form-group small {
+  font-size: 0.85rem;
+  color: #718096;
+}
+
+.alert {
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+.alert-error {
+  background-color: #fff5f5;
+  color: #c53030;
+  border: 1px solid #feb2b2;
+}
+
+.alert-success {
+  background-color: #F5F5DC;
+  color: #654321;
+  border: 1px solid #DEB887;
+}
+
+.save-button:disabled,
+.cancel-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 480px) {
+  .profile-card {
+    padding: 2rem 1.5rem;
+  }
+
+  .profile-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .profile-header h1 {
+    font-size: 1.75rem;
+  }
+
+  .button-group {
+    flex-direction: column;
+  }
+}
+
