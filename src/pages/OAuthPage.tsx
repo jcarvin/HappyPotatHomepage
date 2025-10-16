@@ -3,9 +3,9 @@ import { loginUser, updateApiToken } from '../lib/auth';
 import { useAuth } from '../hooks/useAuth';
 import './OAuthPage.css';
 
-const CLIENT_ID = import.meta.env.VITE_HUBSPOT_CLIENT_ID;
-const CLIENT_SECRET = import.meta.env.VITE_HUBSPOT_CLIENT_SECRET;
-const REDIRECT_URI = import.meta.env.VITE_HUBSPOT_REDIRECT_URI;
+const CLIENT_ID = import.meta.env.CLIENT_ID;
+const CLIENT_SECRET = import.meta.env.CLIENT_SECRET;
+const REDIRECT_URI = import.meta.env.REDIRECT_URI;
 
 type OAuthStep = 'authorize' | 'finalize' | 'legacy';
 
