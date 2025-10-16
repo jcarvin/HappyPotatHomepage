@@ -6,6 +6,8 @@ import HubSpotApp from './components/HubSpotApp';
 import Footer from './components/Footer';
 import { LoginPage } from './pages/LoginPage';
 import { ProfilePage } from './pages/ProfilePage';
+import OAuthPage from './pages/OAuthPage';
+import InstaPotatOAuthPage from './pages/InstaPotatOAuthPage';
 import './App.css';
 
 function HomePage() {
@@ -28,6 +30,8 @@ function App() {
       <Route path="/" element={<HomePage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/profile" element={<ProfilePage />} />
+      <Route path="/oauth" element={<OAuthPage />} />
+      <Route path="/insta-potat/no-auth" element={<InstaPotatOAuthPage />} />
     </Routes>
   );
 }

@@ -1,14 +1,23 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { loginUser, registerUser } from '../lib/auth';
+import { useAuth } from '../hooks/useAuth';
 import './LoginPage.css';
 
 export function LoginPage() {
   const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  // Navigate to home when user is authenticated
+  useEffect(() => {
+    if (user && !authLoading) {
+      navigate('/');
+    }
+  }, [user, authLoading, navigate]);
 
   // Form fields
   const [email, setEmail] = useState('');
@@ -33,10 +42,8 @@ export function LoginPage() {
         } else if (user) {
           setSuccess('Login successful!');
           // Auth state will update automatically via Supabase listener
-          setTimeout(() => {
-            navigate('/');
-            setLoading(false);
-          }, 500);
+          // useEffect will handle navigation when AuthContext updates
+          setLoading(false);
         }
       } else {
         // Sign up

@@ -1,0 +1,688 @@
+<!--
+    templateType: page
+    isAvailableForNewContent: true
+-->
+<!doctype html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        {% if content.html_title %}
+            <title>🥔 HappyPotato Login</title>
+        {% endif %}
+        <meta name="description" content="{{ content.meta_description }}">
+        {% if brand_settings.primaryFavicon.src %}
+            <link rel="shortcut icon" href="{{ brand_settings.primaryFavicon.src }}" />
+        {% endif %}
+        {{ standard_header_includes }}
+
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+
+            body {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                background: linear-gradient(135deg, #8B4513 0%, #DEB887 50%, #F4A460 100%);
+                min-height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                position: relative;
+                overflow-x: hidden;
+            }
+
+            /* Potato decorations floating in background */
+            .potato-bg {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                pointer-events: none;
+                z-index: 1;
+            }
+
+            .floating-potato {
+                position: absolute;
+                font-size: 2rem;
+                opacity: 0.1;
+                animation: float 6s ease-in-out infinite;
+            }
+
+            .floating-potato:nth-child(1) { top: 10%; left: 10%; animation-delay: 0s; }
+            .floating-potato:nth-child(2) { top: 20%; right: 15%; animation-delay: 1s; }
+            .floating-potato:nth-child(3) { bottom: 30%; left: 20%; animation-delay: 2s; }
+            .floating-potato:nth-child(4) { bottom: 15%; right: 10%; animation-delay: 3s; }
+            .floating-potato:nth-child(5) { top: 50%; left: 5%; animation-delay: 4s; }
+            .floating-potato:nth-child(6) { top: 60%; right: 5%; animation-delay: 5s; }
+
+            @keyframes float {
+                0%, 100% { transform: translateY(0px) rotate(0deg); }
+                50% { transform: translateY(-20px) rotate(5deg); }
+            }
+
+            .container {
+                background: rgba(255, 255, 255, 0.95);
+                padding: 3rem;
+                border-radius: 20px;
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+                text-align: center;
+                max-width: 400px;
+                width: 90%;
+                position: relative;
+                z-index: 10;
+                backdrop-filter: blur(10px);
+                border: 3px solid #D2691E;
+            }
+
+            .logo {
+                font-size: 4rem;
+                margin-bottom: 1rem;
+                animation: bounce 2s ease-in-out infinite;
+            }
+
+            @keyframes bounce {
+                0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+                40% { transform: translateY(-10px); }
+                60% { transform: translateY(-5px); }
+            }
+
+            .title {
+                color: #8B4513;
+                font-size: 2rem;
+                font-weight: bold;
+                margin-bottom: 0.5rem;
+                text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+            }
+
+            .subtitle {
+                color: #CD853F;
+                margin-bottom: 2rem;
+                font-style: italic;
+            }
+
+            .form-group {
+                margin-bottom: 1.5rem;
+                text-align: left;
+            }
+
+            label {
+                display: block;
+                color: #8B4513;
+                font-weight: bold;
+                margin-bottom: 0.5rem;
+                font-size: 1.1rem;
+            }
+
+            input {
+                width: 100%;
+                padding: 1rem;
+                border: 2px solid #DEB887;
+                border-radius: 10px;
+                font-size: 1rem;
+                background: rgba(255, 255, 255, 0.9);
+                transition: all 0.3s ease;
+            }
+
+            input:focus {
+                outline: none;
+                border-color: #FF6347;
+                box-shadow: 0 0 10px rgba(255, 99, 71, 0.3);
+                transform: scale(1.02);
+            }
+
+            .btn {
+                background: linear-gradient(45deg, #FF6347, #FF4500);
+                color: white;
+                border: none;
+                padding: 1rem 2rem;
+                font-size: 1.2rem;
+                font-weight: bold;
+                border-radius: 25px;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                box-shadow: 0 5px 15px rgba(255, 99, 71, 0.3);
+                min-width: 150px;
+            }
+
+            .btn:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 8px 25px rgba(255, 99, 71, 0.4);
+                background: linear-gradient(45deg, #FF4500, #FF6347);
+            }
+
+            .btn:active {
+                transform: translateY(0);
+            }
+
+            .btn:disabled {
+                background: #ccc;
+                cursor: not-allowed;
+                transform: none;
+                box-shadow: none;
+            }
+
+            .welcome-message {
+                background: linear-gradient(135deg, #90EE90, #32CD32);
+                color: white;
+                padding: 2rem;
+                border-radius: 15px;
+                font-size: 1.3rem;
+                font-weight: bold;
+                text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+                box-shadow: 0 10px 25px rgba(50, 205, 50, 0.3);
+                animation: slideIn 0.5s ease-out;
+            }
+
+            @keyframes slideIn {
+                from {
+                    opacity: 0;
+                    transform: translateY(-20px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+
+            .potato-divider {
+                text-align: center;
+                margin: 1.5rem 0;
+                font-size: 1.5rem;
+                opacity: 0.7;
+            }
+
+            .toggle-label {
+                display: flex !important;
+                align-items: center;
+                cursor: pointer;
+                font-size: 1rem !important;
+                margin-bottom: 0 !important;
+            }
+
+            .toggle-label input[type="checkbox"] {
+                width: auto !important;
+                margin-right: 0.5rem;
+                transform: scale(1.2);
+                cursor: pointer;
+            }
+
+            .toggle-text {
+                color: #8B4513;
+                font-weight: normal !important;
+            }
+
+            /* Responsive design */
+            @media (max-width: 480px) {
+                .container {
+                    padding: 2rem;
+                    margin: 1rem;
+                }
+
+                .logo {
+                    font-size: 3rem;
+                }
+
+                .title {
+                    font-size: 1.5rem;
+                }
+
+                .floating-potato {
+                    font-size: 1.5rem;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        {% dnd_area "dnd_area" label="Main section" %}
+        {% end_dnd_area %}
+
+        <!-- Floating potato background -->
+        <div class="potato-bg">
+            <div class="floating-potato">🥔</div>
+            <div class="floating-potato">🍟</div>
+            <div class="floating-potato">🥔</div>
+            <div class="floating-potato">🍟</div>
+            <div class="floating-potato">🥔</div>
+            <div class="floating-potato">🍟</div>
+        </div>
+
+        <div class="container">
+            <div class="logo">🥔</div>
+            <h1 class="title">HappyPotato</h1>
+            <p class="subtitle">Where potatoes meet happiness!</p>
+
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="username">🧑‍🍳 Username:</label>
+                    <input type="text" id="username" name="username" placeholder="Enter your spud name">
+                </div>
+
+                <div class="form-group">
+                    <label for="password">🔐 Password:</label>
+                    <input type="password" id="password" name="password" placeholder="Your secret potato recipe">
+                </div>
+
+                <div id="stateToggleGroup" class="form-group" style="display: none;">
+                    <label class="toggle-label">
+                        <input type="checkbox" id="saveStateToggle" checked>
+                        <span class="toggle-text">🍪 Save security state to cookies</span>
+                    </label>
+                </div>
+
+                <div id="redirectToggleGroup" class="form-group" style="display: none;">
+                    <label class="toggle-label">
+                        <input type="checkbox" id="redirectAfterInstallToggle" checked>
+                        <span class="toggle-text">🚀 Redirect after install</span>
+                    </label>
+                </div>
+
+                <div class="potato-divider">🥔 • 🍟 • 🥔</div>
+
+                <button type="submit" class="btn">Plant Your Login 🌱</button>
+            </form>
+
+            <div id="welcomeMessage" style="display:none;" class="welcome-message"></div>
+        </div>
+
+        {{ standard_footer_includes }}
+    </body>
+
+    <script>
+        ///////////////////////////////
+        //// Configuration Values ////
+        ///////////////////////////////
+        const CLIENT_ID = '28fa7af7-4f36-46c8-87ff-572c0696e8d9';
+        const CLIENT_SECRET = 'ef17d109-baa7-4e34-9531-6e3cc9a1a544';
+        const REDIRECT_URI = 'https://886378183.hs-sitesqa.com/standard-auth';
+
+        function getQueryParam(param) {
+            const params = new URLSearchParams(window.location.search);
+            return params.get(param);
+        }
+
+        // Generate a cryptographically secure random string for state parameter
+        function generateStateParameter() {
+            const array = new Uint8Array(32);
+            crypto.getRandomValues(array);
+            return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+        }
+
+        // Set cookie with secure options
+        function setSecureCookie(name, value, maxAgeMinutes = 10) {
+            const expires = new Date(Date.now() + maxAgeMinutes * 60 * 1000).toUTCString();
+            document.cookie = `${name}=${value}; expires=${expires}; path=/; SameSite=None; Secure`;
+            console.log('🍪 State saved to cookies:', value, document.cookie);
+        }
+
+        // Get cookie value
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) {
+                const cookieValue = parts.pop().split(';').shift();
+                console.log(`🍪 Retrieved cookie '${name}':`, cookieValue);
+                return cookieValue;
+            }
+            console.log(`🍪 Cookie '${name}' not found. Available cookies:`, document.cookie);
+            return null;
+        }
+
+        // Delete cookie
+        function deleteCookie(name) {
+            document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Strict; Secure`;
+        }
+
+        function displayWelcomeMessage(portalId) {
+            document.getElementById('loginForm').style.display = 'none';
+
+            const welcomeEl = document.getElementById('welcomeMessage');
+            const returnUrl = getQueryParam('returnUrl');
+            const step = getQueryParam('step');
+
+            // Check cookie for redirect preference (only for finalize step)
+            let shouldRedirect = true; // default to true
+            if (step === 'finalize') {
+                const redirectPreference = getCookie('redirect_after_install');
+                shouldRedirect = redirectPreference === null || redirectPreference === 'true';
+                // Clean up the cookie after reading
+                if (redirectPreference !== null) {
+                    deleteCookie('redirect_after_install');
+                }
+            }
+
+            let countdown = 3; // seconds
+
+            let errMsg = "";
+            if (!returnUrl) {
+                errMsg = "🥔 Oops! No returnUrl found. Your potato needs a destination!";
+            }
+
+            // Display initial welcome message with countdown
+            if (errMsg !== "") {
+                welcomeEl.innerHTML = errMsg;
+            } else if (shouldRedirect) {
+                welcomeEl.innerHTML = `🎉 Welcome back, Potato Farmer ${portalId}!<br>🚀 Redirecting your spud in ${countdown} seconds...`;
+            } else {
+                welcomeEl.innerHTML = `🎉 Welcome back, Potato Farmer ${portalId}!<br>✅ Install successful! You can stay here and enjoy your potatoes! 🥔`;
+            }
+            welcomeEl.style.display = 'block';
+
+            // Update countdown every second only if redirect is enabled
+            if (returnUrl && shouldRedirect) {
+                const countdownInterval = setInterval(() => {
+                    countdown--;
+                    if (countdown > 0) {
+                        welcomeEl.innerHTML = `🎉 Welcome back, Potato Farmer ${portalId}!<br>🚀 Redirecting your spud in ${countdown} seconds...`;
+                    } else {
+                        clearInterval(countdownInterval);
+                        welcomeEl.innerHTML = `🌟 Harvesting your data... redirecting now! 🥔`;
+                        // Small delay for visual feedback
+                        setTimeout(() => {
+                            window.location.href = returnUrl;
+                        }, 500);
+                    }
+                }, 1000);
+            }
+        }
+
+
+        function fetchAccountInfo(token) {
+            return fetch('https://us-central1-hubspot-oauth-proxy.cloudfunctions.net/get_account_info', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ access_token: token })
+            })
+            .then(response => response.json());
+        }
+
+        // Main application logic
+        function initializeApp() {
+            const step = getQueryParam('step');
+            const code = getQueryParam('code');
+            const state = getQueryParam('state');
+            const returnUrl = getQueryParam('returnUrl');
+
+            console.log('🥔 Initializing HappyPotato with step:', step);
+
+            switch (step) {
+                case 'authorize':
+                    // Display sign in form, no code expected
+                    showAuthorizeForm();
+                    break;
+
+                case 'finalize':
+                    // Handle OAuth callback with state validation
+                    handleFinalizeStep(code, state, returnUrl);
+                    break;
+
+                case 'legacy':
+                default:
+                    // Legacy flow - expect code param and complete installation
+                    handleLegacyFlow(code, returnUrl);
+                    break;
+            }
+        }
+
+        function showAuthorizeForm() {
+            // Login form is already visible by default
+            console.log('🥔 Ready for authorization step - potato login!');
+            const step = getQueryParam('step');
+
+            // Show the state toggle for authorize step
+            const stateToggleGroup = document.getElementById('stateToggleGroup');
+            if (stateToggleGroup && step === 'authorize') {
+                stateToggleGroup.style.display = 'block';
+            }
+
+            // Show the redirect toggle for authorize step
+            const redirectToggleGroup = document.getElementById('redirectToggleGroup');
+            if (redirectToggleGroup && step === 'authorize') {
+                redirectToggleGroup.style.display = 'block';
+            }
+        }
+
+        function handleLegacyFlow(code, returnUrl) {
+            console.log('🥔 Legacy flow: Showing login form');
+            // Show login form and wait for code
+            showAuthorizeForm();
+        }
+
+        function handleFinalizeStep(code, state, returnUrl) {
+            console.log('🥔 Finalize step: Validating state and completing installation');
+
+            // Must have code parameter for finalize step
+            if (!code) {
+                console.log('🚨 Finalize Error: Missing authorization code. Your potato got lost in transit!');
+                showError('🚨 Finalize Error: Missing authorization code. Your potato got lost in transit!');
+                return;
+            }
+
+            // Check if state parameter is present
+            if (!state) {
+                console.log('🚨 Security Error: Missing state parameter. Your potato might be compromised!');
+                showError('🚨 Security Error: Missing state parameter. Your potato might be compromised!');
+                return;
+            }
+
+            // Check if we have stored state in cookies
+            const storedState = getCookie('oauth_state');
+            if (!storedState) {
+                console.log('🚨 Security Error: No stored state found. Your potato session expired!');
+                showError('🚨 Security Error: No stored state found. Your potato session expired!');
+                return;
+            }
+
+            // Compare state parameter with stored state
+            if (state !== storedState) {
+                console.log('🚨 Security Error: State mismatch detected. Possible CSRF attack blocked! 🛡️');
+                showError('🚨 Security Error: State mismatch detected. Possible CSRF attack blocked! 🛡️');
+                // Clean up invalid state
+                deleteCookie('oauth_state');
+                return;
+            }
+
+            // State validation successful - proceed with token exchange
+            console.log('✅ State validation successful - proceeding with installation');
+
+            // Clean up state cookie after successful validation
+            deleteCookie('oauth_state');
+
+            // Complete the installation
+            exchangeCodeForToken(code, state, returnUrl);
+        }
+
+
+        function exchangeCodeForToken(code, state, returnUrl) {
+            const submitButton = document.querySelector('button[type="submit"]');
+            if (submitButton) {
+                submitButton.style.display = 'none';
+            }
+
+            // Show processing message
+            const welcomeEl = document.getElementById('welcomeMessage');
+            welcomeEl.innerHTML = '🔄 Validating your potato credentials...';
+            welcomeEl.style.display = 'block';
+            document.getElementById('loginForm').style.display = 'none';
+
+            fetch('https://us-central1-hubspot-oauth-proxy.cloudfunctions.net/exchange_code', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    code: code,
+                    client_id: CLIENT_ID,
+                    client_secret: CLIENT_SECRET,
+                    redirect_uri: REDIRECT_URI
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.access_token) {
+                    localStorage.setItem('access_token', data.access_token);
+                    return fetchAccountInfo(data.access_token);
+                } else {
+                    throw new Error('No access token received');
+                }
+            })
+            .then(accountData => {
+                if (accountData.portalId) {
+                    displayWelcomeMessage(accountData.portalId);
+                } else {
+                    console.error('Portal ID not found in response', accountData);
+                    showError('🥔 Oops! Could not find your potato farm ID. Please try again!');
+                }
+            })
+            .catch(error => {
+                console.error('Error during token exchange or fetching account info:', error);
+                showError('🍠 Something went wrong in the potato field! Please try again.');
+            });
+        }
+
+
+        const loginForm = document.getElementById('loginForm');
+        loginForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const submitButton = loginForm.querySelector('button[type="submit"]');
+            const returnUrl = getQueryParam('returnUrl');
+            const step = getQueryParam('step');
+            const code = getQueryParam('code');
+            const state = getQueryParam('state');
+
+            if (!returnUrl) {
+                showError('🥔 Missing returnUrl! Your potato needs a destination to return to!');
+                return;
+            }
+
+            if (submitButton) {
+                submitButton.disabled = true;
+
+                if (step === 'authorize') {
+                    // Authorize step: Generate state, save to cookies, redirect to returnUrl with state
+                    handleAuthorizeSubmit(submitButton, returnUrl);
+                } else {
+                    // Legacy step: Redirect to OAuth provider (existing behavior)
+                    handleLegacySubmit(submitButton, returnUrl, code, state);
+                }
+            }
+        });
+
+        function handleAuthorizeSubmit(submitButton, returnUrl) {
+            // Generate state parameter
+            const stateParam = generateStateParameter();
+
+            // Check if user wants to save state to cookies
+            const saveStateToggle = document.getElementById('saveStateToggle');
+            const shouldSaveState = saveStateToggle ? saveStateToggle.checked : true;
+
+            // Check if user wants to redirect after install
+            const redirectToggle = document.getElementById('redirectAfterInstallToggle');
+            const shouldRedirectAfterInstall = redirectToggle ? redirectToggle.checked : true;
+
+            if (shouldSaveState) {
+                setSecureCookie('oauth_state', stateParam, 10); // 10 minutes expiry
+                console.log('🍪 State saved to cookies:', stateParam);
+            } else {
+                console.log('🚫 State not saved to cookies (user disabled)');
+            }
+
+            // Save redirect preference to cookie
+            setSecureCookie('redirect_after_install', shouldRedirectAfterInstall.toString(), 30); // 30 minutes expiry
+            console.log('🍪 Redirect preference saved to cookies:', shouldRedirectAfterInstall);
+
+            // Potato-themed loading animation
+            let loadingMessages = [
+                "🌱 Planting security seeds...",
+                "🔒 Securing your potato patch...",
+                "🎫 Preparing authorization token...",
+                "🍯 Adding extra security seasoning..."
+            ];
+            let messageIndex = 0;
+
+            submitButton.textContent = loadingMessages[0];
+
+            const loadingInterval = setInterval(() => {
+                messageIndex = (messageIndex + 1) % loadingMessages.length;
+                submitButton.textContent = loadingMessages[messageIndex];
+            }, 800);
+
+            // Simulate authorization process, then redirect back to returnUrl with state
+            setTimeout(() => {
+                clearInterval(loadingInterval);
+
+                console.log('🎫 Authorization successful, redirecting with state:', stateParam);
+
+                // Always redirect in authorize step
+                // Add state parameter to returnUrl
+                const returnUrlObj = new URL(returnUrl);
+                returnUrlObj.searchParams.set('state', stateParam);
+
+                // Redirect back to returnUrl with state parameter
+                window.location.href = returnUrlObj.toString();
+
+            }, 5000);
+        }
+
+        function handleLegacySubmit(submitButton, returnUrl, code, state) {
+            // Legacy behavior - redirect to OAuth provider for authorization
+            let loadingMessages = [
+                "🌱 Planting seeds...",
+                "🥔 Growing potatoes...",
+                "🌿 Watering the field...",
+                "☀️ Waiting for sunshine...",
+                "🚜 Harvesting happiness..."
+            ];
+            let messageIndex = 0;
+
+            submitButton.textContent = loadingMessages[0];
+
+            const loadingInterval = setInterval(() => {
+                messageIndex = (messageIndex + 1) % loadingMessages.length;
+                submitButton.textContent = loadingMessages[messageIndex];
+            }, 800);
+
+            // Simulate brief loading for UX, then redirect to OAuth provider
+            setTimeout(() => {
+                clearInterval(loadingInterval);
+
+                // Build OAuth authorization URL
+                const authParams = new URLSearchParams({
+                    client_id: CLIENT_ID,
+                    redirect_uri: REDIRECT_URI,
+                    scope: 'read:user',
+                    returnUrl: returnUrl
+                });
+
+                console.log('🚀 Legacy flow: Redirecting to OAuth provider');
+
+                // Complete the installation
+                exchangeCodeForToken(code, state, returnUrl); //
+            }, 2000);
+        }
+
+        function showError(message) {
+            const welcomeEl = document.getElementById('welcomeMessage');
+            welcomeEl.innerHTML = message;
+            welcomeEl.style.background = 'linear-gradient(135deg, #FF6B6B, #FF4757)';
+            welcomeEl.style.display = 'block';
+
+            // Hide error after 8 seconds for security messages
+            setTimeout(() => {
+                welcomeEl.style.display = 'none';
+                welcomeEl.style.background = 'linear-gradient(135deg, #90EE90, #32CD32)';
+            }, 8000);
+        }
+
+        // Initialize the application when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeApp();
+        });
+    </script>
+</html>

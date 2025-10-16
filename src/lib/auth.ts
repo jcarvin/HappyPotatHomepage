@@ -161,8 +161,17 @@ export async function getCurrentUser(): Promise<{ user: AuthUser | null; error: 
       .eq('id', authUser.id)
       .single();
 
-    if (profileError) {
-      return { user: null, error: 'Failed to load user profile' };
+    if (profileError || !profileData) {
+      // If profile fetch fails, use email as username
+      return {
+        user: {
+          id: authUser.id,
+          email: authUser.email!,
+          username: authUser.email!.split('@')[0],
+          apiToken: null
+        },
+        error: null
+      };
     }
 
     return {
