@@ -108,6 +108,8 @@ function OAuthPage() {
     try {
       // Use absolute URL because this might be called from within an iframe
       const apiUrl = window.location.origin + '/api/hubspot-token-info';
+      console.log('🔍 Fetching token info from:', apiUrl);
+
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
@@ -116,6 +118,13 @@ function OAuthPage() {
         },
         body: JSON.stringify({ access_token: token })
       });
+
+      console.log('📡 Response status:', response.status);
+
+      if (!response.ok) {
+        console.error('❌ API returned error status:', response.status);
+      }
+
       const tokenData = await response.json();
       console.log('🔑 Token Info:', tokenData);
     } catch (error) {
