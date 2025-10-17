@@ -76,6 +76,44 @@ function HubSpotDebugPage() {
     }
   };
 
+  const checkTokenInfo = async () => {
+    if (!user?.apiToken) return;
+
+    setLoading('Token Info');
+    const timestamp = new Date().toISOString();
+
+    try {
+      const response = await fetch('/api/hubspot-token-info', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          access_token: user.apiToken
+        })
+      });
+
+      const data = await response.json();
+
+      addResponse({
+        endpoint: '/oauth/v1/access-tokens/' + user.apiToken.substring(0, 20) + '...',
+        status: response.status,
+        data,
+        timestamp
+      });
+    } catch (error) {
+      addResponse({
+        endpoint: '/oauth/v1/access-tokens/' + user.apiToken.substring(0, 20) + '...',
+        status: 0,
+        data: null,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        timestamp
+      });
+    } finally {
+      setLoading(null);
+    }
+  };
+
   const handleCustomRequest = () => {
     if (customEndpoint) {
       makeApiCall(customEndpoint);
@@ -107,7 +145,7 @@ function HubSpotDebugPage() {
           <h2>🚀 Quick Actions</h2>
           <div className="button-grid">
             <button
-              onClick={() => makeApiCall('/oauth/v1/access-tokens/' + (user.apiToken || 'PLACEHOLDER'))}
+              onClick={checkTokenInfo}
               disabled={!user.apiToken || loading !== null}
               className="action-btn"
             >

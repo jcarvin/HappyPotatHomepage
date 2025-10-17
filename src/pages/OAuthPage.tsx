@@ -357,7 +357,7 @@ function OAuthPage() {
     const authUrl = new URL('https://app.hubspot.com/oauth/authorize');
     authUrl.searchParams.set('client_id', CLIENT_ID);
     authUrl.searchParams.set('redirect_uri', REDIRECT_URI);
-    authUrl.searchParams.set('scope', 'oauth crm.objects.contacts.read crm.objects.contacts.write');
+    authUrl.searchParams.set('scope', 'oauth');
 
     setTimeout(() => {
       window.location.href = authUrl.toString();
