@@ -28,6 +28,9 @@ function Header() {
               <Link to="/profile" className="nav-link nav-link-profile">
                 👤 {user.username}
               </Link>
+              <Link to="/debug/hubspot" className="nav-link nav-link-debug">
+                🔍 API Debug
+              </Link>
               <button onClick={handleSignOut} className="nav-link nav-button">
                 Sign Out
               </button>

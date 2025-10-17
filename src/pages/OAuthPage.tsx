@@ -274,9 +274,6 @@ function OAuthPage() {
           console.log('✅ Successfully saved HubSpot access token to Supabase!');
         }
 
-        // Fetch token info from HubSpot
-        await fetchTokenInfo(data.access_token);
-
         // Fetch account info
         const accountData = await fetchAccountInfo(data.access_token);
 

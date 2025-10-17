@@ -13,6 +13,7 @@ This file helps you navigate the project documentation.
 - **[DATABASE_SETUP.md](DATABASE_SETUP.md)** - Supabase database setup
 - **[SUPABASE_SETUP.md](SUPABASE_SETUP.md)** - Supabase configuration
 - **[AUTH_README.md](AUTH_README.md)** - Authentication setup
+- **[VERCEL_ENV_VARS.md](VERCEL_ENV_VARS.md)** - ⚙️ Environment variables configuration
 
 ### OAuth
 - **[OAUTH_SETUP.md](OAUTH_SETUP.md)** - HubSpot OAuth configuration
@@ -23,6 +24,7 @@ This file helps you navigate the project documentation.
 
 ### API
 - **[API_SETUP.md](API_SETUP.md)** - Vercel serverless API functions
+- **[HUBSPOT_DEBUG_PLAYGROUND.md](HUBSPOT_DEBUG_PLAYGROUND.md)** - 🔍 Interactive HubSpot API testing tool
 
 ### Refresh Tokens
 - **[REFRESH_TOKEN_QUICKSTART.md](REFRESH_TOKEN_QUICKSTART.md)** - Quick start (⭐ READ THIS FIRST)
