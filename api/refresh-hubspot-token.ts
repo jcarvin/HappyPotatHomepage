@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 const CLIENT_ID = process.env.VITE_HUBSPOT_CLIENT_ID;
 const CLIENT_SECRET = process.env.VITE_HUBSPOT_CLIENT_SECRET;
+const REDIRECT_URI = process.env.VITE_HUBSPOT_REDIRECT_URI;
 
 export default async function handler(
   req: VercelRequest,
@@ -28,7 +29,7 @@ export default async function handler(
     return res.status(400).json({ error: 'refresh_token is required' });
   }
 
-  if (!CLIENT_ID || !CLIENT_SECRET) {
+  if (!CLIENT_ID || !CLIENT_SECRET || !REDIRECT_URI) {
     return res.status(500).json({ error: 'Server configuration error' });
   }
 
@@ -43,6 +44,7 @@ export default async function handler(
         grant_type: 'refresh_token',
         client_id: CLIENT_ID,
         client_secret: CLIENT_SECRET,
+        redirect_uri: REDIRECT_URI,
         refresh_token: refresh_token
       })
     });
