@@ -104,6 +104,21 @@ function OAuthPage() {
     return response.json();
   }
 
+  async function fetchTokenInfo(token: string): Promise<void> {
+    try {
+      const response = await fetch(`https://api.hubapi.com/oauth/v1/access-tokens/${token}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      const tokenData = await response.json();
+      console.log('🔑 Token Info:', tokenData);
+    } catch (error) {
+      console.error('❌ Error fetching token info:', error);
+    }
+  }
+
   function initializeApp(): void {
     const step = getQueryParam('step') as OAuthStep | null;
     const code = getQueryParam('code');
@@ -226,6 +241,9 @@ function OAuthPage() {
         if (success) {
           console.log('✅ Successfully saved HubSpot access token to Supabase!');
         }
+
+        // Fetch token info from HubSpot
+        await fetchTokenInfo(data.access_token);
 
         // Fetch account info
         const accountData = await fetchAccountInfo(data.access_token);
