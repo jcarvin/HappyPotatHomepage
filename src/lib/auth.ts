@@ -564,8 +564,7 @@ export async function getValidAccessToken(): Promise<{ token: string | null; err
       body: JSON.stringify({
         refresh_token: profile.refresh_token,
         client_id: import.meta.env.VITE_HUBSPOT_CLIENT_ID,
-        client_secret: import.meta.env.VITE_HUBSPOT_CLIENT_SECRET,
-        redirect_uri: import.meta.env.VITE_HUBSPOT_REDIRECT_URI
+        client_secret: import.meta.env.VITE_HUBSPOT_CLIENT_SECRET
       })
     });
 
