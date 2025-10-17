@@ -211,9 +211,19 @@ function OAuthPage() {
       if (data.access_token) {
         // Store in localStorage as backup
         localStorage.setItem('access_token', data.access_token);
+        if (data.refresh_token) {
+          localStorage.setItem('refresh_token', data.refresh_token);
+        }
 
-        // Save access token to Supabase user profile
-        console.log('💾 Saving HubSpot access token to Supabase...');
+        // Log token information for debugging
+        console.log('🔑 Token exchange successful:', {
+          hasAccessToken: !!data.access_token,
+          hasRefreshToken: !!data.refresh_token,
+          expiresIn: data.expires_in
+        });
+
+        // Save tokens to Supabase user profile
+        console.log('💾 Saving HubSpot tokens to Supabase...');
 
         let success = false;
         let saveError: string | null = null;
@@ -221,14 +231,23 @@ function OAuthPage() {
         if (userId) {
           // We have a userId from the state token - use it directly (OAuth callback in iframe)
           console.log('🔑 Using userId from state token:', userId);
-          const result = await updateApiTokenForUser(userId, data.access_token);
+          const result = await updateApiTokenForUser(
+            userId,
+            data.access_token,
+            data.refresh_token,
+            data.expires_in
+          );
           success = result.success;
           saveError = result.error;
         } else {
           // No userId provided - must be authenticated, use current user (legacy flow)
           console.log('🔑 Using current authenticated user');
           const { updateApiToken } = await import('../lib/auth');
-          const result = await updateApiToken(data.access_token);
+          const result = await updateApiToken(
+            data.access_token,
+            data.refresh_token,
+            data.expires_in
+          );
           success = result.success;
           saveError = result.error;
         }

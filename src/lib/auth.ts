@@ -18,6 +18,8 @@ export interface AuthUser {
   email: string;
   username: string;
   apiToken: string | null;
+  refreshToken?: string | null;
+  accessTokenExpiresAt?: string | null;
 }
 
 /**
@@ -251,7 +253,11 @@ async function ensureUserProfile(): Promise<{ success: boolean; error: string | 
 /**
  * Update user's API token
  */
-export async function updateApiToken(apiToken: string): Promise<{ success: boolean; error: string | null }> {
+export async function updateApiToken(
+  apiToken: string,
+  refreshToken?: string,
+  expiresIn?: number
+): Promise<{ success: boolean; error: string | null }> {
   try {
     console.log('🔍 updateApiToken: Starting update process...');
     const { data: { user } } = await supabase.auth.getUser();
@@ -272,9 +278,31 @@ export async function updateApiToken(apiToken: string): Promise<{ success: boole
 
     console.log('📝 updateApiToken: Attempting to update token for user...');
 
+    // Calculate expiry time if provided
+    const expiresAt = expiresIn
+      ? new Date(Date.now() + expiresIn * 1000).toISOString()
+      : null;
+
+    // Build update object
+    const updateData: {
+      api_token: string;
+      refresh_token?: string;
+      access_token_expires_at?: string | null;
+    } = {
+      api_token: apiToken
+    };
+
+    if (refreshToken) {
+      updateData.refresh_token = refreshToken;
+    }
+
+    if (expiresAt) {
+      updateData.access_token_expires_at = expiresAt;
+    }
+
     const { data, error } = await supabase
       .from('user_profiles')
-      .update({ api_token: apiToken })
+      .update(updateData)
       .eq('id', user.id)
       .select(); // Add select to see what was updated
 
@@ -412,7 +440,12 @@ export async function consumeOAuthState(stateToken: string): Promise<{ userId: s
  * This is used in OAuth callback where we don't have an authenticated session
  * but we have the user ID from the state token
  */
-export async function updateApiTokenForUser(userId: string, apiToken: string): Promise<{ success: boolean; error: string | null }> {
+export async function updateApiTokenForUser(
+  userId: string,
+  apiToken: string,
+  refreshToken?: string,
+  expiresIn?: number
+): Promise<{ success: boolean; error: string | null }> {
   try {
     console.log('🔍 updateApiTokenForUser: Updating token for user:', userId);
 
@@ -434,13 +467,20 @@ export async function updateApiTokenForUser(userId: string, apiToken: string): P
       console.log('📝 Using default username:', username);
     }
 
+    // Calculate expiry time if provided
+    const expiresAt = expiresIn
+      ? new Date(Date.now() + expiresIn * 1000).toISOString()
+      : null;
+
     // Use the database function that bypasses RLS with SECURITY DEFINER
     // This is necessary because OAuth callbacks happen in unauthenticated contexts
     console.log('📝 Calling database function to upsert profile...');
     const { data, error } = await supabase.rpc('upsert_user_api_token', {
       p_user_id: userId,
       p_username: username,
-      p_api_token: apiToken
+      p_api_token: apiToken,
+      p_refresh_token: refreshToken || null,
+      p_access_token_expires_at: expiresAt
     });
 
     if (error) {
@@ -464,6 +504,92 @@ export async function updateApiTokenForUser(userId: string, apiToken: string): P
   } catch (err) {
     console.error('❌ Unexpected error updating token:', err);
     return { success: false, error: err instanceof Error ? err.message : 'Update failed' };
+  }
+}
+
+/**
+ * Get a valid HubSpot access token for the current user
+ * Automatically refreshes the token if it's expired or about to expire
+ */
+export async function getValidAccessToken(): Promise<{ token: string | null; error: string | null }> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return { token: null, error: 'Not authenticated' };
+    }
+
+    // Fetch user profile with tokens
+    const { data: profile, error: profileError } = await supabase
+      .from('user_profiles')
+      .select('api_token, refresh_token, access_token_expires_at')
+      .eq('id', user.id)
+      .single();
+
+    if (profileError || !profile) {
+      return { token: null, error: 'Failed to fetch user profile' };
+    }
+
+    // If no access token at all, user needs to authenticate with HubSpot
+    if (!profile.api_token) {
+      return { token: null, error: 'No HubSpot access token found. Please authenticate with HubSpot.' };
+    }
+
+    // Check if token is expired or will expire in the next 5 minutes
+    const now = new Date();
+    const expiresAt = profile.access_token_expires_at ? new Date(profile.access_token_expires_at) : null;
+    const fiveMinutesFromNow = new Date(now.getTime() + 5 * 60 * 1000);
+
+    const isExpiredOrExpiringSoon = !expiresAt || expiresAt <= fiveMinutesFromNow;
+
+    // If token is still valid, return it
+    if (!isExpiredOrExpiringSoon) {
+      console.log('✅ Access token is still valid');
+      return { token: profile.api_token, error: null };
+    }
+
+    // Token is expired or expiring soon, try to refresh it
+    console.log('🔄 Access token expired or expiring soon, refreshing...');
+
+    if (!profile.refresh_token) {
+      return { token: null, error: 'Access token expired and no refresh token available. Please re-authenticate with HubSpot.' };
+    }
+
+    // Call our API to refresh the token
+    const response = await fetch('/api/refresh-hubspot-token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ refresh_token: profile.refresh_token })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error('❌ Token refresh failed:', errorData);
+      return { token: null, error: 'Failed to refresh access token. Please re-authenticate with HubSpot.' };
+    }
+
+    const tokenData = await response.json();
+
+    // Save the new tokens
+    const updateResult = await updateApiToken(
+      tokenData.access_token,
+      tokenData.refresh_token,
+      tokenData.expires_in
+    );
+
+    if (!updateResult.success) {
+      console.error('❌ Failed to save refreshed token:', updateResult.error);
+      // Return the token anyway since we got it, but log the error
+      return { token: tokenData.access_token, error: null };
+    }
+
+    console.log('✅ Access token refreshed successfully');
+    return { token: tokenData.access_token, error: null };
+  } catch (err) {
+    console.error('❌ Error getting valid access token:', err);
+    return { token: null, error: err instanceof Error ? err.message : 'Failed to get access token' };
   }
 }
 
