@@ -23,25 +23,30 @@ export default async function handler(
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { refresh_token } = req.body;
+  const { refresh_token, client_id, client_secret, redirect_uri } = req.body;
 
   if (!refresh_token) {
     return res.status(400).json({ error: 'refresh_token is required' });
   }
 
-  if (!CLIENT_ID || !CLIENT_SECRET || !REDIRECT_URI) {
-    console.error('Missing environment variables:', {
-      hasClientId: !!CLIENT_ID,
-      hasClientSecret: !!CLIENT_SECRET,
-      hasRedirectUri: !!REDIRECT_URI,
+  // Use values from request body if provided, otherwise fall back to environment variables
+  const clientId = client_id || CLIENT_ID;
+  const clientSecret = client_secret || CLIENT_SECRET;
+  const redirectUri = redirect_uri || REDIRECT_URI;
+
+  if (!clientId || !clientSecret || !redirectUri) {
+    console.error('Missing credentials:', {
+      hasClientId: !!clientId,
+      hasClientSecret: !!clientSecret,
+      hasRedirectUri: !!redirectUri,
       envVars: Object.keys(process.env).filter(key => key.includes('HUBSPOT'))
     });
     return res.status(500).json({
-      error: 'Server configuration error',
+      error: 'Server configuration error - missing HubSpot credentials',
       details: {
-        hasClientId: !!CLIENT_ID,
-        hasClientSecret: !!CLIENT_SECRET,
-        hasRedirectUri: !!REDIRECT_URI
+        hasClientId: !!clientId,
+        hasClientSecret: !!clientSecret,
+        hasRedirectUri: !!redirectUri
       }
     });
   }
@@ -55,9 +60,9 @@ export default async function handler(
       },
       body: new URLSearchParams({
         grant_type: 'refresh_token',
-        client_id: CLIENT_ID,
-        client_secret: CLIENT_SECRET,
-        redirect_uri: REDIRECT_URI,
+        client_id: clientId,
+        client_secret: clientSecret,
+        redirect_uri: redirectUri,
         refresh_token: refresh_token
       })
     });
