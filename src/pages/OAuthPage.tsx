@@ -106,7 +106,9 @@ function OAuthPage() {
 
   async function fetchTokenInfo(token: string): Promise<void> {
     try {
-      const response = await fetch('/api/hubspot-token-info', {
+      // Use absolute URL because this might be called from within an iframe
+      const apiUrl = window.location.origin + '/api/hubspot-token-info';
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
