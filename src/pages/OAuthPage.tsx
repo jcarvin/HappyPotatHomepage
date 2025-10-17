@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { loginUser, createOAuthState, consumeOAuthState, updateApiTokenForUser } from '../lib/auth';
+import { loginUser, registerUser, createOAuthState, consumeOAuthState, updateApiTokenForUser } from '../lib/auth';
 import { useAuth } from '../hooks/useAuth';
 import './OAuthPage.css';
 
@@ -8,6 +8,7 @@ const CLIENT_SECRET = import.meta.env.VITE_HUBSPOT_CLIENT_SECRET;
 const REDIRECT_URI = import.meta.env.VITE_HUBSPOT_REDIRECT_URI;
 
 type OAuthStep = 'authorize' | 'finalize' | 'legacy';
+type AuthMode = 'login' | 'signup';
 
 interface AccountInfo {
   portalId: string;
@@ -25,9 +26,11 @@ function OAuthPage() {
   const [waitingForAuth, setWaitingForAuth] = useState(false);
   const hasProcessedAuth = useRef(false);
 
-  // Auth fields
+  // Auth mode and fields
+  const [authMode, setAuthMode] = useState<AuthMode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [username, setUsername] = useState('');
   const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -373,9 +376,14 @@ function OAuthPage() {
       return;
     }
 
-    // Validate email and password
+    // Validate fields based on mode
     if (!email || !password) {
       setAuthError('🥔 Please enter both email and password!');
+      return;
+    }
+
+    if (authMode === 'signup' && !username) {
+      setAuthError('🥔 Please enter a username!');
       return;
     }
 
@@ -385,37 +393,74 @@ function OAuthPage() {
     }
 
     setButtonDisabled(true);
-    setButtonText('🔐 Authenticating with Supabase...');
+    const initialButtonText = authMode === 'login' ? '🔐 Authenticating...' : '🌱 Creating your account...';
+    setButtonText(initialButtonText);
     hasProcessedAuth.current = false;
 
     try {
-      // Authenticate with Supabase first
-      const { user: authUser, error: loginError } = await loginUser(email, password);
+      if (authMode === 'signup') {
+        // Sign up new user
+        const { user: newUser, error: signupError } = await registerUser({ email, password, username });
 
-      if (loginError) {
-        setAuthError(`🍠 Authentication failed: ${loginError}`);
-        setButtonDisabled(false);
-        setButtonText('Plant Your Login 🌱');
-        return;
+        if (signupError) {
+          setAuthError(`🍠 Sign up failed: ${signupError}`);
+          setButtonDisabled(false);
+          setButtonText('Plant Your Sign Up 🌱');
+          return;
+        }
+
+        if (!newUser) {
+          setAuthError('🥔 Sign up failed. Please try again.');
+          setButtonDisabled(false);
+          setButtonText('Plant Your Sign Up 🌱');
+          return;
+        }
+
+        console.log('✅ Sign up successful! Logging in...');
+        setButtonText('🔐 Logging you in...');
+
+        // After successful signup, log the user in
+        const { user: authUser, error: loginError } = await loginUser(email, password);
+
+        if (loginError || !authUser) {
+          setAuthError('🥔 Account created but login failed. Please try logging in.');
+          setButtonDisabled(false);
+          setButtonText('Plant Your Login 🌱');
+          setAuthMode('login');
+          return;
+        }
+
+        console.log('✅ Login successful after signup:', authUser.email);
+        setWaitingForAuth(true);
+        setButtonText('🌱 Authenticated! Processing...');
+      } else {
+        // Login existing user
+        const { user: authUser, error: loginError } = await loginUser(email, password);
+
+        if (loginError) {
+          setAuthError(`🍠 Authentication failed: ${loginError}`);
+          setButtonDisabled(false);
+          setButtonText('Plant Your Login 🌱');
+          return;
+        }
+
+        if (!authUser) {
+          setAuthError('🥔 Authentication failed. Please check your credentials.');
+          setButtonDisabled(false);
+          setButtonText('Plant Your Login 🌱');
+          return;
+        }
+
+        console.log('✅ Supabase authentication successful for user:', authUser.email);
+        setWaitingForAuth(true);
+        setButtonText('🌱 Authenticated! Processing...');
       }
-
-      if (!authUser) {
-        setAuthError('🥔 Authentication failed. Please check your credentials.');
-        setButtonDisabled(false);
-        setButtonText('Plant Your Login 🌱');
-        return;
-      }
-
-      // Success! Wait for AuthContext to update
-      console.log('✅ Supabase authentication successful for user:', authUser.email);
-      setWaitingForAuth(true);
-      setButtonText('🌱 Authenticated! Processing...');
       // useEffect will handle the OAuth flow once AuthContext updates
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An error occurred';
       setAuthError(`🍠 Error: ${errorMessage}`);
       setButtonDisabled(false);
-      setButtonText('Plant Your Login 🌱');
+      setButtonText(authMode === 'login' ? 'Plant Your Login 🌱' : 'Plant Your Sign Up 🌱');
     }
   }
 
@@ -457,6 +502,22 @@ function OAuthPage() {
               />
             </div>
 
+            {authMode === 'signup' && (
+              <div className="form-group">
+                <label htmlFor="username">👤 Username:</label>
+                <input
+                  type="text"
+                  id="username"
+                  name="username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="potato_farmer"
+                  autoComplete="username"
+                  required
+                />
+              </div>
+            )}
+
             <div className="form-group">
               <label htmlFor="password">🔐 Password:</label>
               <input
@@ -466,7 +527,7 @@ function OAuthPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Your secret potato recipe"
-                autoComplete="current-password"
+                autoComplete={authMode === 'login' ? 'current-password' : 'new-password'}
                 required
                 minLength={6}
               />
@@ -490,6 +551,41 @@ function OAuthPage() {
             <button type="submit" className="btn" disabled={buttonDisabled}>
               {buttonText}
             </button>
+
+            <div className="auth-mode-toggle">
+              {authMode === 'login' ? (
+                <p>
+                  New potato farmer? {' '}
+                  <button
+                    type="button"
+                    className="link-btn"
+                    onClick={() => {
+                      setAuthMode('signup');
+                      setButtonText('Plant Your Sign Up 🌱');
+                      setAuthError(null);
+                    }}
+                  >
+                    Sign up here
+                  </button>
+                </p>
+              ) : (
+                <p>
+                  Already have an account? {' '}
+                  <button
+                    type="button"
+                    className="link-btn"
+                    onClick={() => {
+                      setAuthMode('login');
+                      setButtonText('Plant Your Login 🌱');
+                      setAuthError(null);
+                      setUsername('');
+                    }}
+                  >
+                    Login here
+                  </button>
+                </p>
+              )}
+            </div>
           </form>
         )}
 

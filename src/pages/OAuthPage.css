@@ -233,6 +233,38 @@
   font-weight: normal !important;
 }
 
+.oauth-page .auth-mode-toggle {
+  margin-top: 1.5rem;
+  text-align: center;
+}
+
+.oauth-page .auth-mode-toggle p {
+  color: #8B4513;
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+.oauth-page .link-btn {
+  background: none;
+  border: none;
+  color: #FF6347;
+  font-weight: bold;
+  cursor: pointer;
+  text-decoration: underline;
+  font-size: 0.95rem;
+  padding: 0;
+  transition: all 0.2s ease;
+}
+
+.oauth-page .link-btn:hover {
+  color: #FF4500;
+  text-decoration: none;
+}
+
+.oauth-page .link-btn:active {
+  transform: scale(0.98);
+}
+
 /* Responsive design */
 @media (max-width: 480px) {
   .oauth-page .container {
