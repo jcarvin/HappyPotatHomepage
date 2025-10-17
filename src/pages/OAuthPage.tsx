@@ -106,11 +106,12 @@ function OAuthPage() {
 
   async function fetchTokenInfo(token: string): Promise<void> {
     try {
-      const response = await fetch(`https://api.hubapi.com/oauth/v1/access-tokens/${token}`, {
-        method: 'GET',
+      const response = await fetch('/api/hubspot-token-info', {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json'
-        }
+        },
+        body: JSON.stringify({ access_token: token })
       });
       const tokenData = await response.json();
       console.log('🔑 Token Info:', tokenData);
