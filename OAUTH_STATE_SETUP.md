@@ -126,6 +126,46 @@ GRANT EXECUTE ON FUNCTION create_oauth_state TO authenticated;
 GRANT EXECUTE ON FUNCTION consume_oauth_state TO anon;
 GRANT EXECUTE ON FUNCTION consume_oauth_state TO authenticated;
 GRANT EXECUTE ON FUNCTION cleanup_oauth_states TO postgres;
+
+-- Create function to upsert user api_token (bypasses RLS for OAuth callbacks)
+CREATE OR REPLACE FUNCTION upsert_user_api_token(
+  p_user_id UUID,
+  p_username TEXT,
+  p_api_token TEXT
+)
+RETURNS json AS $$
+DECLARE
+  v_result json;
+BEGIN
+  -- Upsert the profile
+  INSERT INTO user_profiles (id, username, api_token)
+  VALUES (p_user_id, p_username, p_api_token)
+  ON CONFLICT (id)
+  DO UPDATE SET
+    api_token = EXCLUDED.api_token,
+    updated_at = NOW()
+  RETURNING json_build_object(
+    'id', id,
+    'username', username,
+    'success', true
+  ) INTO v_result;
+
+  RETURN v_result;
+EXCEPTION
+  WHEN OTHERS THEN
+    RETURN json_build_object(
+      'success', false,
+      'error', SQLERRM
+    );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Grant execute permission to authenticated and anonymous users
+GRANT EXECUTE ON FUNCTION upsert_user_api_token TO authenticated;
+GRANT EXECUTE ON FUNCTION upsert_user_api_token TO anon;
+
+COMMENT ON FUNCTION upsert_user_api_token IS
+'Safely upserts user api_token from OAuth callback. Uses SECURITY DEFINER to bypass RLS since OAuth callbacks happen in unauthenticated contexts.';
 ```
 
 ## How It Works
