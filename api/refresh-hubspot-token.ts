@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-const CLIENT_ID = process.env.VITE_HUBSPOT_CLIENT_ID;
-const CLIENT_SECRET = process.env.VITE_HUBSPOT_CLIENT_SECRET;
-const REDIRECT_URI = process.env.VITE_HUBSPOT_REDIRECT_URI;
+const CLIENT_ID = process.env.VITE_HUBSPOT_CLIENT_ID || process.env.HUBSPOT_CLIENT_ID;
+const CLIENT_SECRET = process.env.VITE_HUBSPOT_CLIENT_SECRET || process.env.HUBSPOT_CLIENT_SECRET;
+const REDIRECT_URI = process.env.VITE_HUBSPOT_REDIRECT_URI || process.env.HUBSPOT_REDIRECT_URI;
 
 export default async function handler(
   req: VercelRequest,
@@ -30,7 +30,20 @@ export default async function handler(
   }
 
   if (!CLIENT_ID || !CLIENT_SECRET || !REDIRECT_URI) {
-    return res.status(500).json({ error: 'Server configuration error' });
+    console.error('Missing environment variables:', {
+      hasClientId: !!CLIENT_ID,
+      hasClientSecret: !!CLIENT_SECRET,
+      hasRedirectUri: !!REDIRECT_URI,
+      envVars: Object.keys(process.env).filter(key => key.includes('HUBSPOT'))
+    });
+    return res.status(500).json({
+      error: 'Server configuration error',
+      details: {
+        hasClientId: !!CLIENT_ID,
+        hasClientSecret: !!CLIENT_SECRET,
+        hasRedirectUri: !!REDIRECT_URI
+      }
+    });
   }
 
   try {
