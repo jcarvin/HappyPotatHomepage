@@ -354,7 +354,7 @@ function OAuthPage() {
     currentUrl.searchParams.set('code', 'PLACEHOLDER'); // Will be replaced by HubSpot
 
     // Generate HubSpot OAuth URL
-    const authUrl = new URL('https://app.hubspot.com/oauth/authorize');
+    const authUrl = new URL('https://app.hubapiqa.com/oauth/authorize');
     authUrl.searchParams.set('client_id', CLIENT_ID);
     authUrl.searchParams.set('redirect_uri', REDIRECT_URI);
     authUrl.searchParams.set('scope', 'oauth');

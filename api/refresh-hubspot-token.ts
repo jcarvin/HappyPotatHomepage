@@ -49,7 +49,7 @@ export default async function handler(
 
   try {
     // Exchange refresh token for new access token
-    const response = await fetch('https://api.hubapi.com/oauth/v1/token', {
+    const response = await fetch('https://api.hubapiqa.com/oauth/v1/token', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded'

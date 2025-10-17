@@ -241,7 +241,7 @@ function HubSpotDebugPage() {
           <div className="custom-request">
             <h3>🛠️ Custom Request</h3>
             <div className="custom-input-group">
-              <span className="endpoint-prefix">https://api.hubapi.com</span>
+              <span className="endpoint-prefix">https://api.hubapiqa.com</span>
               <input
                 type="text"
                 value={customEndpoint}

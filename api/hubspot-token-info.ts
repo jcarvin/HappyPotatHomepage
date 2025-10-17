@@ -28,7 +28,7 @@ export default async function handler(
   try {
     // Make the request to HubSpot API server-side (no CORS issues)
     const response = await fetch(
-      `https://api.hubapi.com/oauth/v1/access-tokens/${access_token}`,
+      `https://api.hubapiqa.com/oauth/v1/access-tokens/${access_token}`,
       {
         method: 'GET',
         headers: {

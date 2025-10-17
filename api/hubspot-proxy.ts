@@ -33,6 +33,11 @@ export default async function handler(
 
     const userToken = authHeader.substring(7);
 
+    // Check for Supabase credentials
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
+      return res.status(500).json({ error: 'Server configuration error - missing Supabase credentials' });
+    }
+
     // Create Supabase client with service role key to bypass RLS
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
@@ -163,7 +168,7 @@ export default async function handler(
     }
 
     // Make the request to HubSpot API
-    const hubspotUrl = `https://api.hubapi.com${endpoint}`;
+    const hubspotUrl = `https://api.hubapiqa.com${endpoint}`;
     const hubspotResponse = await fetch(hubspotUrl, {
       method: method.toUpperCase(),
       headers: {
