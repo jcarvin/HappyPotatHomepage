@@ -109,7 +109,8 @@ function OAuthPage() {
       const response = await fetch('/api/hubspot-token-info', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate'
         },
         body: JSON.stringify({ access_token: token })
       });
