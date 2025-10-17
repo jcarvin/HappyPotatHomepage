@@ -429,40 +429,37 @@ export async function updateApiTokenForUser(userId: string, apiToken: string): P
       username = existingProfile.username;
       console.log('✅ Found existing username:', username);
     } else {
-      // Generate a default username (we can't access auth.admin without service role key)
+      // Generate a default username
       username = `user_${userId.slice(0, 8)}`;
       console.log('📝 Using default username:', username);
     }
 
-    // Use UPSERT to insert or update atomically
-    // This prevents race conditions and duplicate key errors
-    console.log('📝 Upserting profile with token...');
-    const { data, error } = await supabase
-      .from('user_profiles')
-      .upsert(
-        {
-          id: userId,
-          username: username,
-          api_token: apiToken
-        },
-        {
-          onConflict: 'id', // Specify which column to check for conflicts
-          ignoreDuplicates: false // Update if exists
-        }
-      )
-      .select();
+    // Use the database function that bypasses RLS with SECURITY DEFINER
+    // This is necessary because OAuth callbacks happen in unauthenticated contexts
+    console.log('📝 Calling database function to upsert profile...');
+    const { data, error } = await supabase.rpc('upsert_user_api_token', {
+      p_user_id: userId,
+      p_username: username,
+      p_api_token: apiToken
+    });
 
     if (error) {
-      console.error('❌ Failed to upsert profile:', error);
+      console.error('❌ Failed to upsert profile via function:', error);
       return { success: false, error: error.message };
     }
 
-    if (!data || data.length === 0) {
-      console.warn('⚠️ No rows affected by upsert');
+    if (!data) {
+      console.warn('⚠️ No data returned from upsert function');
       return { success: false, error: 'Failed to save profile' };
     }
 
-    console.log('✅ Token saved successfully via upsert');
+    // Check if the function returned an error
+    if (data.success === false) {
+      console.error('❌ Database function returned error:', data.error);
+      return { success: false, error: data.error || 'Failed to save profile' };
+    }
+
+    console.log('✅ Token saved successfully via database function');
     return { success: true, error: null };
   } catch (err) {
     console.error('❌ Unexpected error updating token:', err);
