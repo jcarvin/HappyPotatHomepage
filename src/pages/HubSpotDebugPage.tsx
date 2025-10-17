@@ -9,6 +9,7 @@ interface ApiResponse {
   data: any;
   error?: string;
   timestamp: string;
+  diagnostics?: string[];
 }
 
 function HubSpotDebugPage() {
@@ -57,6 +58,9 @@ function HubSpotDebugPage() {
 
       const data = await response.json();
 
+      // Extract diagnostics from the response
+      const diagnostics = data.diagnostics || data._debug?.diagnostics;
+
       // Check if we need to re-authenticate
       if (data.needsReauth) {
         addResponse({
@@ -64,14 +68,16 @@ function HubSpotDebugPage() {
           status: response.status,
           data,
           error: `${data.error || 'Authentication required'} - Please go through OAuth flow again.`,
-          timestamp
+          timestamp,
+          diagnostics
         });
       } else {
         addResponse({
           endpoint,
           status: response.status,
           data,
-          timestamp
+          timestamp,
+          diagnostics
         });
       }
     } catch (error) {
@@ -277,6 +283,19 @@ function HubSpotDebugPage() {
                     <span className="endpoint">{response.endpoint}</span>
                     <span className="timestamp">{new Date(response.timestamp).toLocaleTimeString()}</span>
                   </div>
+
+                  {response.diagnostics && response.diagnostics.length > 0 && (
+                    <details className="response-details" open>
+                      <summary>🔍 Token Diagnostics</summary>
+                      <div className="diagnostics-list">
+                        {response.diagnostics.map((diagnostic, idx) => (
+                          <div key={idx} className="diagnostic-item">
+                            {diagnostic}
+                          </div>
+                        ))}
+                      </div>
+                    </details>
+                  )}
 
                   {response.error ? (
                     <div className="response-error">
