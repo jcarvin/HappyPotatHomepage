@@ -9,6 +9,7 @@ import { ProfilePage } from './pages/ProfilePage';
 import OAuthPage from './pages/OAuthPage';
 import InstaPotatOAuthPage from './pages/InstaPotatOAuthPage';
 import HubSpotDebugPage from './pages/HubSpotDebugPage';
+import { useAuth } from './hooks/useAuth';
 import './App.css';
 
 function HomePage() {
@@ -25,7 +26,24 @@ function HomePage() {
   );
 }
 
+function LoadingScreen() {
+  return (
+    <div className="loading-screen">
+      <div className="loading-content">
+        <div className="loading-potato">🥔</div>
+        <p className="loading-text">Loading Happy Potat...</p>
+      </div>
+    </div>
+  );
+}
+
 function App() {
+  const { loading } = useAuth();
+
+  if (loading) {
+    return <LoadingScreen />;
+  }
+
   return (
     <Routes>
       <Route path="/" element={<HomePage />} />
