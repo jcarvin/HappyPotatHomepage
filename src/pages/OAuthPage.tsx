@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { loginUser, updateApiToken } from '../lib/auth';
+import { loginUser, createOAuthState, consumeOAuthState, updateApiTokenForUser } from '../lib/auth';
 import { useAuth } from '../hooks/useAuth';
 import './OAuthPage.css';
 
@@ -20,7 +20,6 @@ function OAuthPage() {
   const [showForm, setShowForm] = useState(true);
   const [buttonText, setButtonText] = useState('Plant Your Login 🌱');
   const [buttonDisabled, setButtonDisabled] = useState(false);
-  const [saveStateTogggle, setSaveStateToggle] = useState(true);
   const [redirectAfterInstallToggle, setRedirectAfterInstallToggle] = useState(true);
   const [currentStep, setCurrentStep] = useState<OAuthStep>('legacy');
   const [waitingForAuth, setWaitingForAuth] = useState(false);
@@ -55,49 +54,11 @@ function OAuthPage() {
     return params.get(param);
   }
 
-  function generateStateParameter(): string {
-    const array = new Uint8Array(32);
-    crypto.getRandomValues(array);
-    return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
-  }
-
-  function setSecureCookie(name: string, value: string, maxAgeMinutes: number = 10): void {
-    const expires = new Date(Date.now() + maxAgeMinutes * 60 * 1000).toUTCString();
-    document.cookie = `${name}=${value}; expires=${expires}; path=/; SameSite=None; Secure`;
-    console.log('🍪 State saved to cookies:', value, document.cookie);
-  }
-
-  function getCookie(name: string): string | null {
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; ${name}=`);
-    if (parts.length === 2) {
-      const cookieValue = parts.pop()?.split(';').shift();
-      console.log(`🍪 Retrieved cookie '${name}':`, cookieValue);
-      return cookieValue || null;
-    }
-    console.log(`🍪 Cookie '${name}' not found. Available cookies:`, document.cookie);
-    return null;
-  }
-
-  function deleteCookie(name: string): void {
-    document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Strict; Secure`;
-  }
-
   function displayWelcomeMessage(portalId: string): void {
     setShowForm(false);
 
     const returnUrl = getQueryParam('returnUrl');
-    const step = getQueryParam('step');
-
-    let shouldRedirect = true;
-    if (step === 'finalize') {
-      const redirectPreference = getCookie('redirect_after_install');
-      shouldRedirect = redirectPreference === null || redirectPreference === 'true';
-      if (redirectPreference !== null) {
-        deleteCookie('redirect_after_install');
-      }
-    }
-
+    const shouldRedirect = redirectAfterInstallToggle; // Use the toggle state
     let countdown = 3;
 
     if (!returnUrl) {
@@ -175,7 +136,7 @@ function OAuthPage() {
     showAuthorizeForm();
   }
 
-  function handleFinalizeStep(code: string | null, state: string | null): void {
+  async function handleFinalizeStep(code: string | null, state: string | null): Promise<void> {
     console.log('🥔 Finalize step: Validating state and completing installation');
 
     if (!code) {
@@ -190,27 +151,23 @@ function OAuthPage() {
       return;
     }
 
-    const storedState = getCookie('oauth_state');
-    if (!storedState) {
-      console.log('🚨 Security Error: No stored state found. Your potato session expired!');
-      showError('🚨 Security Error: No stored state found. Your potato session expired!');
+    // Consume the state token and get the associated user ID
+    console.log('🔍 Validating state token from database...');
+    const { userId, error: stateError } = await consumeOAuthState(state);
+
+    if (stateError || !userId) {
+      console.log('🚨 Security Error:', stateError || 'Invalid state token');
+      showError(`🚨 Security Error: ${stateError || 'Invalid state token'}. Your potato session might be expired or compromised! 🛡️`);
       return;
     }
 
-    if (state !== storedState) {
-      console.log('🚨 Security Error: State mismatch detected. Possible CSRF attack blocked! 🛡️');
-      showError('🚨 Security Error: State mismatch detected. Possible CSRF attack blocked! 🛡️');
-      deleteCookie('oauth_state');
-      return;
-    }
+    console.log('✅ State validation successful - proceeding with installation for user:', userId);
 
-    console.log('✅ State validation successful - proceeding with installation');
-    deleteCookie('oauth_state');
-
-    exchangeCodeForToken(code);
+    // Exchange code for token and associate with the user
+    exchangeCodeForToken(code, userId);
   }
 
-  async function exchangeCodeForToken(code: string): Promise<void> {
+  async function exchangeCodeForToken(code: string, userId?: string): Promise<void> {
     setButtonText('🔄 Validating your potato credentials...');
     setShowWelcome(true);
     setShowForm(false);
@@ -238,7 +195,24 @@ function OAuthPage() {
 
         // Save access token to Supabase user profile
         console.log('💾 Saving HubSpot access token to Supabase...');
-        const { success, error: saveError } = await updateApiToken(data.access_token);
+
+        let success = false;
+        let saveError: string | null = null;
+
+        if (userId) {
+          // We have a userId from the state token - use it directly (OAuth callback in iframe)
+          console.log('🔑 Using userId from state token:', userId);
+          const result = await updateApiTokenForUser(userId, data.access_token);
+          success = result.success;
+          saveError = result.error;
+        } else {
+          // No userId provided - must be authenticated, use current user (legacy flow)
+          console.log('🔑 Using current authenticated user');
+          const { updateApiToken } = await import('../lib/auth');
+          const result = await updateApiToken(data.access_token);
+          success = result.success;
+          saveError = result.error;
+        }
 
         if (saveError) {
           console.error('❌ Failed to save access token to Supabase:', saveError);
@@ -268,19 +242,26 @@ function OAuthPage() {
     }
   }
 
-  function handleAuthorizeSubmit(): void {
-    const stateParam = generateStateParameter();
+  async function handleAuthorizeSubmit(): Promise<void> {
     const returnUrl = getQueryParam('returnUrl');
 
-    if (saveStateTogggle) {
-      setSecureCookie('oauth_state', stateParam, 10);
-      console.log('🍪 State saved to cookies:', stateParam);
-    } else {
-      console.log('🚫 State not saved to cookies (user disabled)');
+    if (!returnUrl) {
+      showError('🥔 Missing returnUrl! Your potato needs a destination!');
+      return;
     }
 
-    setSecureCookie('redirect_after_install', redirectAfterInstallToggle.toString(), 30);
-    console.log('🍪 Redirect preference saved to cookies:', redirectAfterInstallToggle);
+    setButtonText('🔐 Creating secure state token...');
+
+    // Create state token in database
+    const { stateToken, error: stateError } = await createOAuthState(10);
+
+    if (stateError || !stateToken) {
+      console.error('❌ Failed to create OAuth state:', stateError);
+      showError(`🍠 Failed to create secure state: ${stateError}`);
+      return;
+    }
+
+    console.log('✅ State token created successfully');
 
     const loadingMessages = [
       "🌱 Planting security seeds...",
@@ -300,14 +281,12 @@ function OAuthPage() {
     setTimeout(() => {
       clearInterval(loadingInterval);
 
-      console.log('🎫 Authorization successful, redirecting with state:', stateParam);
+      console.log('🎫 Authorization successful, redirecting with state:', stateToken.substring(0, 8) + '...');
 
-      if (returnUrl) {
-        const returnUrlObj = new URL(returnUrl);
-        returnUrlObj.searchParams.set('state', stateParam);
-        window.location.href = returnUrlObj.toString();
-      }
-    }, 5000);
+      const returnUrlObj = new URL(returnUrl);
+      returnUrlObj.searchParams.set('state', stateToken);
+      window.location.href = returnUrlObj.toString();
+    }, 3000);
   }
 
   function handleLegacySubmit(): void {
@@ -494,29 +473,16 @@ function OAuthPage() {
             </div>
 
             {currentStep === 'authorize' && (
-              <>
-                <div className="form-group">
-                  <label className="toggle-label">
-                    <input
-                      type="checkbox"
-                      checked={saveStateTogggle}
-                      onChange={(e) => setSaveStateToggle(e.target.checked)}
-                    />
-                    <span className="toggle-text">🍪 Save security state to cookies</span>
-                  </label>
-                </div>
-
-                <div className="form-group">
-                  <label className="toggle-label">
-                    <input
-                      type="checkbox"
-                      checked={redirectAfterInstallToggle}
-                      onChange={(e) => setRedirectAfterInstallToggle(e.target.checked)}
-                    />
-                    <span className="toggle-text">🚀 Redirect after install</span>
-                  </label>
-                </div>
-              </>
+              <div className="form-group">
+                <label className="toggle-label">
+                  <input
+                    type="checkbox"
+                    checked={redirectAfterInstallToggle}
+                    onChange={(e) => setRedirectAfterInstallToggle(e.target.checked)}
+                  />
+                  <span className="toggle-text">🚀 Redirect after install</span>
+                </label>
+              </div>
             )}
 
             <div className="potato-divider">🥔 • 🍟 • 🥔</div>
