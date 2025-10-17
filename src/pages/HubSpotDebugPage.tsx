@@ -61,6 +61,18 @@ function HubSpotDebugPage() {
       // Extract diagnostics from the response
       const diagnostics = data.diagnostics || data._debug?.diagnostics;
 
+      // Debug: Log what we received
+      console.log('🔍 API Response:', {
+        endpoint,
+        status: response.status,
+        hasDiagnostics: !!diagnostics,
+        diagnosticsLength: diagnostics?.length,
+        diagnostics,
+        hasDebugField: !!data._debug,
+        debugKeys: data._debug ? Object.keys(data._debug) : [],
+        responseKeys: Object.keys(data)
+      });
+
       // Check if we need to re-authenticate
       if (data.needsReauth) {
         addResponse({
@@ -283,6 +295,21 @@ function HubSpotDebugPage() {
                     <span className="endpoint">{response.endpoint}</span>
                     <span className="timestamp">{new Date(response.timestamp).toLocaleTimeString()}</span>
                   </div>
+
+                  {/* Debug info to help troubleshoot */}
+                  <details className="response-details">
+                    <summary>🐛 Debug Info</summary>
+                    <pre className="response-json">
+                      {JSON.stringify({
+                        hasDiagnostics: !!response.diagnostics,
+                        diagnosticsCount: response.diagnostics?.length || 0,
+                        diagnostics: response.diagnostics,
+                        hasDebugInData: !!response.data?._debug,
+                        debugKeys: response.data?._debug ? Object.keys(response.data._debug) : [],
+                        topLevelKeys: Object.keys(response.data || {})
+                      }, null, 2)}
+                    </pre>
+                  </details>
 
                   {response.diagnostics && response.diagnostics.length > 0 && (
                     <details className="response-details" open>
