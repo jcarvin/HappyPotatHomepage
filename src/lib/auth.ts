@@ -416,62 +416,53 @@ export async function updateApiTokenForUser(userId: string, apiToken: string): P
   try {
     console.log('🔍 updateApiTokenForUser: Updating token for user:', userId);
 
-    // First ensure the profile exists
-    const { data: existingProfile, error: selectError } = await supabase
+    // First check if profile exists to determine username
+    const { data: existingProfile } = await supabase
       .from('user_profiles')
-      .select('id')
+      .select('username')
       .eq('id', userId)
       .single();
 
-    if (selectError && selectError.code !== 'PGRST116') {
-      console.error('❌ Error checking for profile:', selectError);
-      return { success: false, error: selectError.message };
+    let username: string;
+    if (existingProfile?.username) {
+      // Use existing username
+      username = existingProfile.username;
+      console.log('✅ Found existing username:', username);
+    } else {
+      // Generate a default username (we can't access auth.admin without service role key)
+      username = `user_${userId.slice(0, 8)}`;
+      console.log('📝 Using default username:', username);
     }
 
-    // Create profile if it doesn't exist
-    if (!existingProfile) {
-      console.log('📝 Creating user profile for user:', userId);
-
-      // Get user email for username
-      const { data: { user } } = await supabase.auth.admin.getUserById(userId);
-      const username = user?.email?.split('@')[0] || `user_${userId.slice(0, 8)}`;
-
-      const { error: insertError } = await supabase
-        .from('user_profiles')
-        .insert({
-          id: userId,
-          username,
-          api_token: apiToken
-        });
-
-      if (insertError) {
-        console.error('❌ Failed to create profile:', insertError);
-        return { success: false, error: insertError.message };
-      }
-
-      console.log('✅ User profile created with token');
-      return { success: true, error: null };
-    }
-
-    // Update existing profile
-    console.log('📝 Updating existing profile with token');
+    // Use UPSERT to insert or update atomically
+    // This prevents race conditions and duplicate key errors
+    console.log('📝 Upserting profile with token...');
     const { data, error } = await supabase
       .from('user_profiles')
-      .update({ api_token: apiToken })
-      .eq('id', userId)
+      .upsert(
+        {
+          id: userId,
+          username: username,
+          api_token: apiToken
+        },
+        {
+          onConflict: 'id', // Specify which column to check for conflicts
+          ignoreDuplicates: false // Update if exists
+        }
+      )
       .select();
 
     if (error) {
-      console.error('❌ Failed to update token:', error);
+      console.error('❌ Failed to upsert profile:', error);
       return { success: false, error: error.message };
     }
 
     if (!data || data.length === 0) {
-      console.warn('⚠️ No rows updated');
-      return { success: false, error: 'Failed to update profile' };
+      console.warn('⚠️ No rows affected by upsert');
+      return { success: false, error: 'Failed to save profile' };
     }
 
-    console.log('✅ Token updated successfully');
+    console.log('✅ Token saved successfully via upsert');
     return { success: true, error: null };
   } catch (err) {
     console.error('❌ Unexpected error updating token:', err);
