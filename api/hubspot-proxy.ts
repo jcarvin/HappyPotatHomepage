@@ -61,40 +61,85 @@ export default async function handler(
     let accessToken = profile.api_token;
 
     // Check if token is expired or expiring soon (within 5 minutes)
+    const now = Date.now();
+    const fiveMinutesFromNow = new Date(now + 5 * 60 * 1000);
+
+    console.log('🔍 Token expiry check:', {
+      hasExpiryDate: !!profile.access_token_expires_at,
+      hasRefreshToken: !!profile.refresh_token,
+      expiresAt: profile.access_token_expires_at,
+      now: new Date(now).toISOString(),
+      fiveMinutesFromNow: fiveMinutesFromNow.toISOString()
+    });
+
     if (profile.access_token_expires_at) {
       const expiresAt = new Date(profile.access_token_expires_at);
-      const fiveMinutesFromNow = new Date(Date.now() + 5 * 60 * 1000);
 
-      if (expiresAt <= fiveMinutesFromNow && profile.refresh_token) {
+      if (expiresAt <= fiveMinutesFromNow) {
+        console.log('⚠️ Token is expired or expiring soon!');
+
+        if (!profile.refresh_token) {
+          console.error('❌ No refresh token available. User needs to re-authenticate.');
+          return res.status(401).json({
+            error: 'Access token expired and no refresh token available. Please re-authenticate with HubSpot.',
+            needsReauth: true
+          });
+        }
+
         // Token is expired or expiring soon, refresh it
-        console.log('🔄 Access token expired or expiring soon, refreshing...');
+        console.log('🔄 Attempting to refresh access token...');
 
-        const refreshResponse = await fetch(`${req.headers.origin || 'https://happy-potat-homepage.vercel.app'}/api/refresh-hubspot-token`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ refresh_token: profile.refresh_token })
-        });
+        try {
+          const refreshResponse = await fetch(`${req.headers.origin || 'https://happy-potat-homepage.vercel.app'}/api/refresh-hubspot-token`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ refresh_token: profile.refresh_token })
+          });
 
-        if (refreshResponse.ok) {
+          if (!refreshResponse.ok) {
+            const errorData = await refreshResponse.json().catch(() => ({}));
+            console.error('❌ Token refresh failed:', errorData);
+            return res.status(401).json({
+              error: 'Failed to refresh access token. Please re-authenticate with HubSpot.',
+              details: errorData,
+              needsReauth: true
+            });
+          }
+
           const newTokens = await refreshResponse.json();
           accessToken = newTokens.access_token;
 
           // Update the database with new tokens
-          const expiresAt = new Date(Date.now() + newTokens.expires_in * 1000).toISOString();
-          await supabase
+          const newExpiresAt = new Date(now + newTokens.expires_in * 1000).toISOString();
+          const { error: updateError } = await supabase
             .from('user_profiles')
             .update({
               api_token: newTokens.access_token,
               refresh_token: newTokens.refresh_token,
-              access_token_expires_at: expiresAt
+              access_token_expires_at: newExpiresAt
             })
             .eq('id', user.id);
 
-          console.log('✅ Access token refreshed successfully');
+          if (updateError) {
+            console.error('⚠️ Failed to update tokens in database:', updateError);
+            // Continue anyway with the new token
+          }
+
+          console.log('✅ Access token refreshed successfully! New expiry:', newExpiresAt);
+        } catch (refreshError) {
+          console.error('❌ Error during token refresh:', refreshError);
+          return res.status(500).json({
+            error: 'Error refreshing token',
+            message: refreshError instanceof Error ? refreshError.message : 'Unknown error'
+          });
         }
+      } else {
+        console.log('✅ Access token is still valid');
       }
+    } else {
+      console.log('⚠️ No expiry date stored - cannot determine if token needs refresh');
     }
 
     // Make the request to HubSpot API

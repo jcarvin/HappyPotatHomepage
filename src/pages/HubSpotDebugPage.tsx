@@ -57,12 +57,23 @@ function HubSpotDebugPage() {
 
       const data = await response.json();
 
-      addResponse({
-        endpoint,
-        status: response.status,
-        data,
-        timestamp
-      });
+      // Check if we need to re-authenticate
+      if (data.needsReauth) {
+        addResponse({
+          endpoint,
+          status: response.status,
+          data,
+          error: `${data.error || 'Authentication required'} - Please go through OAuth flow again.`,
+          timestamp
+        });
+      } else {
+        addResponse({
+          endpoint,
+          status: response.status,
+          data,
+          timestamp
+        });
+      }
     } catch (error) {
       addResponse({
         endpoint,
