@@ -104,34 +104,6 @@ function OAuthPage() {
     return response.json();
   }
 
-  async function fetchTokenInfo(token: string): Promise<void> {
-    try {
-      // Use absolute URL because this might be called from within an iframe
-      const apiUrl = window.location.origin + '/api/hubspot-token-info';
-      console.log('🔍 Fetching token info from:', apiUrl);
-
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Cache-Control': 'no-cache, no-store, must-revalidate'
-        },
-        body: JSON.stringify({ access_token: token })
-      });
-
-      console.log('📡 Response status:', response.status);
-
-      if (!response.ok) {
-        console.error('❌ API returned error status:', response.status);
-      }
-
-      const tokenData = await response.json();
-      console.log('🔑 Token Info:', tokenData);
-    } catch (error) {
-      console.error('❌ Error fetching token info:', error);
-    }
-  }
-
   function initializeApp(): void {
     const step = getQueryParam('step') as OAuthStep | null;
     const code = getQueryParam('code');
