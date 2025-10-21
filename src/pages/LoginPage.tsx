@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { loginUser, registerUser } from '../lib/auth';
 import { useAuth } from '../hooks/useAuth';
+import Header from '../components/Header';
 import './LoginPage.css';
 
 export function LoginPage() {
@@ -95,8 +96,10 @@ export function LoginPage() {
   };
 
   return (
-    <div className="login-page">
-      <div className="login-container">
+    <>
+      <Header />
+      <div className="login-page">
+        <div className="login-container">
         <div className="login-card">
           <h1 className="login-title">{isLogin ? 'Welcome Back' : 'Create Account'}</h1>
           <p className="login-subtitle">
@@ -229,6 +232,7 @@ export function LoginPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }
 

@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
+import Header from '../components/Header';
 import './HubSpotDebugPage.css';
 
 interface ApiResponse {
   endpoint: string;
   status: number;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data: any;
   error?: string;
   timestamp: string;
@@ -22,6 +24,7 @@ function HubSpotDebugPage() {
     setResponses((prev) => [response, ...prev]);
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const makeApiCall = async (endpoint: string, method: string = 'GET', body?: any) => {
     setLoading(endpoint);
     const timestamp = new Date().toISOString();
@@ -151,19 +154,24 @@ function HubSpotDebugPage() {
 
   if (!user) {
     return (
-      <div className="debug-page">
-        <div className="debug-container">
-          <h1>🔐 Authentication Required</h1>
-          <p>Please log in to access the HubSpot API debug playground.</p>
-          <a href="/login" className="btn">Go to Login</a>
+      <>
+        <Header />
+        <div className="debug-page">
+          <div className="debug-container">
+            <h1>🔐 Authentication Required</h1>
+            <p>Please log in to access the HubSpot API debug playground.</p>
+            <a href="/login" className="btn">Go to Login</a>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
   return (
-    <div className="debug-page">
-      <div className="debug-container">
+    <>
+      <Header />
+      <div className="debug-page">
+        <div className="debug-container">
         <header className="debug-header">
           <h1>🔍 HubSpot API Debug Playground</h1>
           <p>Explore HubSpot APIs with your stored access token</p>
@@ -342,7 +350,8 @@ function HubSpotDebugPage() {
           )}
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }
 

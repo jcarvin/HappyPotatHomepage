@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import Header from '../components/Header';
 import './InstaPotatOAuthPage.css';
 
 const CLIENT_ID = import.meta.env.VITE_HUBSPOT_CLIENT_ID;
@@ -119,8 +120,10 @@ function InstaPotatOAuthPage() {
   }
 
   return (
-    <div className="instapotat-page">
-      <div className="potato-bg">
+    <>
+      <Header />
+      <div className="instapotat-page">
+        <div className="potato-bg">
         <div className="floating-potato">🥔</div>
         <div className="floating-potato">⚡</div>
         <div className="floating-potato">🥔</div>
@@ -158,6 +161,7 @@ function InstaPotatOAuthPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }
 

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { updateApiToken, updateUsername } from '../lib/auth';
+import Header from '../components/Header';
 import './ProfilePage.css';
 
 export function ProfilePage() {
@@ -67,16 +68,21 @@ export function ProfilePage() {
 
   if (!user) {
     return (
-      <div className="profile-page">
-        <div className="profile-container">
-          <p>Please log in to view your profile.</p>
+      <>
+        <Header />
+        <div className="profile-page">
+          <div className="profile-container">
+            <p>Please log in to view your profile.</p>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
   return (
-    <div className="profile-page">
+    <>
+      <Header />
+      <div className="profile-page">
       <div className="profile-container">
         <div className="profile-card">
           <div className="profile-header">
@@ -179,6 +185,7 @@ export function ProfilePage() {
         </div>
       </div>
     </div>
+    </>
   );
 }
 
