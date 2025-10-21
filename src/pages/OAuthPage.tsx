@@ -1,7 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { loginUser, registerUser, createOAuthState, consumeOAuthState, updateApiTokenForUser } from '../lib/auth';
 import { useAuth } from '../hooks/useAuth';
-import Header from '../components/Header';
 import './OAuthPage.css';
 
 const CLIENT_ID = import.meta.env.VITE_HUBSPOT_CLIENT_ID;
@@ -485,10 +484,8 @@ function OAuthPage() {
   }
 
   return (
-    <>
-      <Header />
-      <div className="oauth-page">
-        <div className="potato-bg">
+    <div className="oauth-page">
+      <div className="potato-bg">
         <div className="floating-potato" style={{ top: '10%', left: '10%', animationDelay: '0s' }}>🥔</div>
         <div className="floating-potato" style={{ top: '20%', right: '15%', animationDelay: '1s' }}>🍟</div>
         <div className="floating-potato" style={{ bottom: '30%', left: '20%', animationDelay: '2s' }}>🥔</div>
@@ -620,7 +617,6 @@ function OAuthPage() {
         )}
       </div>
     </div>
-    </>
   );
 }
 
