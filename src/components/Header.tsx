@@ -18,10 +18,10 @@ function Header() {
           <span className="logo-text">Happy Potat :)</span>
         </Link>
         <nav className="nav">
-          <a href="#home" className="nav-link">Home</a>
-          <a href="#services" className="nav-link">Services</a>
-          <a href="#hubspot-app" className="nav-link">HubSpot App</a>
-          <a href="#contact" className="nav-link">Contact</a>
+          <Link to="/#home" className="nav-link">Home</Link>
+          <Link to="/#services" className="nav-link">Services</Link>
+          <Link to="/#hubspot-app" className="nav-link">HubSpot App</Link>
+          <Link to="/#contact" className="nav-link">Contact</Link>
 
           {user ? (
             <>
