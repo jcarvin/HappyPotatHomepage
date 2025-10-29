@@ -15,7 +15,7 @@ interface ApiResponse {
 }
 
 function HubSpotDebugPage() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [responses, setResponses] = useState<ApiResponse[]>([]);
   const [loading, setLoading] = useState<string | null>(null);
   const [customEndpoint, setCustomEndpoint] = useState('');
@@ -94,6 +94,12 @@ function HubSpotDebugPage() {
           timestamp,
           diagnostics
         });
+
+        // If the call was successful, the proxy might have refreshed the token
+        // Refresh the user context to get the latest token from the database
+        if (response.ok && refreshUser) {
+          await refreshUser();
+        }
       }
     } catch (error) {
       addResponse({
@@ -109,33 +115,74 @@ function HubSpotDebugPage() {
   };
 
   const checkTokenInfo = async () => {
-    if (!user?.apiToken) return;
+    if (!user) return;
 
     setLoading('Token Info');
     const timestamp = new Date().toISOString();
 
     try {
+      // Fetch the latest token from the database instead of using stale context value
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session) {
+        addResponse({
+          endpoint: 'Token Info',
+          status: 0,
+          data: null,
+          error: 'Not authenticated. Please log in.',
+          timestamp
+        });
+        setLoading(null);
+        return;
+      }
+
+      // Get the latest profile data from the database
+      const { data: profile, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('api_token')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError || !profile?.api_token) {
+        addResponse({
+          endpoint: 'Token Info',
+          status: 0,
+          data: null,
+          error: 'No HubSpot access token found. Please authenticate with HubSpot.',
+          timestamp
+        });
+        setLoading(null);
+        return;
+      }
+
+      const apiToken = profile.api_token;
+
       const response = await fetch('/api/hubspot-token-info', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          access_token: user.apiToken
+          access_token: apiToken
         })
       });
 
       const data = await response.json();
 
       addResponse({
-        endpoint: '/oauth/v1/access-tokens/' + user.apiToken.substring(0, 20) + '...',
+        endpoint: '/oauth/v1/access-tokens/' + apiToken.substring(0, 20) + '...',
         status: response.status,
         data,
         timestamp
       });
+
+      // Refresh user context to ensure we have the latest token
+      if (refreshUser) {
+        await refreshUser();
+      }
     } catch (error) {
       addResponse({
-        endpoint: '/oauth/v1/access-tokens/' + user.apiToken.substring(0, 20) + '...',
+        endpoint: 'Token Info',
         status: 0,
         data: null,
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -183,7 +230,7 @@ function HubSpotDebugPage() {
           <div className="button-grid">
             <button
               onClick={checkTokenInfo}
-              disabled={!user.apiToken || loading !== null}
+              disabled={loading !== null}
               className="action-btn"
             >
               📋 Token Info
