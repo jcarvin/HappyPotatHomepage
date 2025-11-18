@@ -202,13 +202,13 @@ function HubSpotDebugPage() {
   const handleDisconnect = async () => {
     // Show confirmation dialog
     const confirmed = window.confirm(
-      '⚠️ Are you sure you want to disconnect this app from your HubSpot portal?\n\n' +
+      '⚠️ Are you sure you want to disconnect this app?\n\n' +
       'This will:\n' +
-      '• Remove the app from your HubSpot account\n' +
-      '• Notify all Super Admins via email\n' +
-      '• Remove all app features, webhooks, and configurations\n' +
-      '• Clear your stored access token\n\n' +
-      'This action cannot be undone.'
+      '• Revoke your current refresh token\n' +
+      '• Disconnect the app from your HubSpot portal\n' +
+      '• Clear your stored credentials\n' +
+      '• Require reauthorization to use the app again\n\n' +
+      'The app will remain installed but will need to be reconnected.'
     );
 
     if (!confirmed) {
@@ -221,9 +221,9 @@ function HubSpotDebugPage() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
 
-      if (!session) {
+      if (!session || !user) {
         addResponse({
-          endpoint: '/appinstalls/v3/external-install',
+          endpoint: '/oauth/v1/refresh-tokens/{token}',
           status: 0,
           data: null,
           error: 'Not authenticated. Please log in.',
@@ -233,7 +233,28 @@ function HubSpotDebugPage() {
         return;
       }
 
-      // Call the DELETE endpoint
+      // Get the refresh token from the database
+      const { data: profile, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('hubspot_refresh_token')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError || !profile?.hubspot_refresh_token) {
+        addResponse({
+          endpoint: '/oauth/v1/refresh-tokens/{token}',
+          status: 0,
+          data: null,
+          error: 'No refresh token found. You may already be disconnected.',
+          timestamp
+        });
+        setLoading(null);
+        return;
+      }
+
+      const refreshToken = profile.hubspot_refresh_token;
+
+      // Call the DELETE endpoint to revoke the refresh token
       const response = await fetch('/api/hubspot-proxy', {
         method: 'POST',
         headers: {
@@ -241,7 +262,7 @@ function HubSpotDebugPage() {
           'Authorization': `Bearer ${session.access_token}`
         },
         body: JSON.stringify({
-          endpoint: '/appinstalls/v3/external-install',
+          endpoint: `/oauth/v1/refresh-tokens/${refreshToken}`,
           method: 'DELETE'
         })
       });
@@ -249,15 +270,15 @@ function HubSpotDebugPage() {
       const data = await response.json();
 
       addResponse({
-        endpoint: '/appinstalls/v3/external-install',
+        endpoint: `/oauth/v1/refresh-tokens/${refreshToken.substring(0, 20)}...`,
         status: response.status,
         data,
         timestamp
       });
 
-      // If successful (204 No Content), clear the stored token
-      if ((response.status === 204 || response.ok) && user) {
-        // Clear the token from the database
+      // If successful (204 No Content or 2xx), clear the stored tokens
+      if (response.status === 204 || response.ok) {
+        // Clear the tokens from the database
         await supabase
           .from('user_profiles')
           .update({
@@ -273,11 +294,11 @@ function HubSpotDebugPage() {
         }
 
         // Show success message
-        alert('✅ Successfully disconnected from HubSpot! You can reconnect anytime through the OAuth page.');
+        alert('✅ Successfully disconnected from HubSpot!\n\nThe app remains installed but you\'ll need to reconnect through the OAuth page to use it again.');
       }
     } catch (error) {
       addResponse({
-        endpoint: '/appinstalls/v3/external-install',
+        endpoint: '/oauth/v1/refresh-tokens/{token}',
         status: 0,
         data: null,
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -408,8 +429,8 @@ function HubSpotDebugPage() {
         <div className="danger-zone">
           <h2>⚠️ Danger Zone</h2>
           <p className="danger-description">
-            Disconnecting will remove this app from your HubSpot portal and clear all stored credentials.
-            You can reconnect anytime through the OAuth flow.
+            Disconnecting will revoke your refresh token and clear all stored credentials.
+            The app will remain installed in your HubSpot portal but you'll need to reauthorize to use it again.
           </p>
           <button
             onClick={handleDisconnect}
