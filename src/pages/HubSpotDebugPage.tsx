@@ -24,6 +24,63 @@ function HubSpotDebugPage() {
     setResponses((prev) => [response, ...prev]);
   };
 
+  // Safely parse JSON response with better error handling
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const parseJsonResponse = async (response: Response): Promise<{ success: boolean; data?: any; error?: string }> => {
+    try {
+      // Check if response has content
+      const contentType = response.headers.get('content-type');
+      const contentLength = response.headers.get('content-length');
+
+      // Handle empty responses (like 204 No Content)
+      if (response.status === 204 || contentLength === '0') {
+        return { success: true, data: {} };
+      }
+
+      // Check if response is JSON
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        return {
+          success: false,
+          error: `Unexpected response type: ${contentType || 'unknown'}. Response: ${text.substring(0, 200)}${text.length > 200 ? '...' : ''}`
+        };
+      }
+
+      // Try to parse JSON
+      const text = await response.text();
+      if (!text || text.trim().length === 0) {
+        return {
+          success: false,
+          error: `Empty response body (Status ${response.status}). Expected JSON but received nothing.`
+        };
+      }
+
+      const data = JSON.parse(text);
+      return { success: true, data };
+    } catch (error) {
+      return {
+        success: false,
+        error: `Failed to parse response as JSON: ${error instanceof Error ? error.message : 'Unknown error'}. This usually means the server returned an error page or invalid data.`
+      };
+    }
+  };
+
+  // Filter out internal debug fields from response data for cleaner display
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const cleanResponseData = (data: any) => {
+    if (!data || typeof data !== 'object') {
+      return data;
+    }
+
+    // Create a copy and remove internal fields
+    const cleaned = { ...data };
+    delete cleaned._debug;
+    delete cleaned.diagnostics;
+    delete cleaned.needsReauth;
+
+    return cleaned;
+  };
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const makeApiCall = async (endpoint: string, method: string = 'GET', body?: any) => {
     setLoading(endpoint);
@@ -59,22 +116,25 @@ function HubSpotDebugPage() {
         })
       });
 
-      const data = await response.json();
+      // Safely parse the JSON response
+      const parseResult = await parseJsonResponse(response);
+
+      if (!parseResult.success) {
+        addResponse({
+          endpoint,
+          status: response.status,
+          data: null,
+          error: parseResult.error || 'Failed to parse response',
+          timestamp
+        });
+        setLoading(null);
+        return;
+      }
+
+      const data = parseResult.data;
 
       // Extract diagnostics from the response
       const diagnostics = data.diagnostics || data._debug?.diagnostics;
-
-      // Debug: Log what we received
-      console.log('🔍 API Response:', {
-        endpoint,
-        status: response.status,
-        hasDiagnostics: !!diagnostics,
-        diagnosticsLength: diagnostics?.length,
-        diagnostics,
-        hasDebugField: !!data._debug,
-        debugKeys: data._debug ? Object.keys(data._debug) : [],
-        responseKeys: Object.keys(data)
-      });
 
       // Check if we need to re-authenticate
       if (data.needsReauth) {
@@ -167,7 +227,22 @@ function HubSpotDebugPage() {
         })
       });
 
-      const data = await response.json();
+      // Safely parse the JSON response
+      const parseResult = await parseJsonResponse(response);
+
+      if (!parseResult.success) {
+        addResponse({
+          endpoint: '/oauth/v1/access-tokens/' + apiToken.substring(0, 20) + '...',
+          status: response.status,
+          data: null,
+          error: parseResult.error || 'Failed to parse response',
+          timestamp
+        });
+        setLoading(null);
+        return;
+      }
+
+      const data = parseResult.data;
 
       addResponse({
         endpoint: '/oauth/v1/access-tokens/' + apiToken.substring(0, 20) + '...',
@@ -267,7 +342,22 @@ function HubSpotDebugPage() {
         })
       });
 
-      const data = await response.json();
+      // Safely parse the JSON response
+      const parseResult = await parseJsonResponse(response);
+
+      if (!parseResult.success) {
+        addResponse({
+          endpoint: `/oauth/v1/refresh-tokens/${refreshToken.substring(0, 20)}...`,
+          status: response.status,
+          data: null,
+          error: parseResult.error || 'Failed to parse response',
+          timestamp
+        });
+        setLoading(null);
+        return;
+      }
+
+      const data = parseResult.data;
 
       addResponse({
         endpoint: `/oauth/v1/refresh-tokens/${refreshToken.substring(0, 20)}...`,
@@ -466,58 +556,79 @@ function HubSpotDebugPage() {
             </div>
           ) : (
             <div className="responses-list">
-              {responses.map((response, index) => (
-                <div key={index} className={`response-card ${response.error ? 'error' : 'success'}`}>
-                  <div className="response-header">
-                    <span className={`status-badge status-${Math.floor(response.status / 100)}`}>
-                      {response.status || 'ERR'}
-                    </span>
-                    <span className="endpoint">{response.endpoint}</span>
-                    <span className="timestamp">{new Date(response.timestamp).toLocaleTimeString()}</span>
-                  </div>
+              {responses.map((response, index) => {
+                const cleanedData = cleanResponseData(response.data);
+                const hasData = cleanedData && Object.keys(cleanedData).length > 0;
+                const isError = response.error || response.status >= 400 || response.status === 0;
+                const isSuccess = response.status >= 200 && response.status < 300;
 
-                  {/* Debug info to help troubleshoot */}
-                  <details className="response-details">
-                    <summary>🐛 Debug Info</summary>
-                    <pre className="response-json">
-                      {JSON.stringify({
-                        hasDiagnostics: !!response.diagnostics,
-                        diagnosticsCount: response.diagnostics?.length || 0,
-                        diagnostics: response.diagnostics,
-                        hasDebugInData: !!response.data?._debug,
-                        debugKeys: response.data?._debug ? Object.keys(response.data._debug) : [],
-                        topLevelKeys: Object.keys(response.data || {})
-                      }, null, 2)}
-                    </pre>
-                  </details>
-
-                  {response.diagnostics && response.diagnostics.length > 0 && (
-                    <details className="response-details" open>
-                      <summary>🔍 Token Diagnostics</summary>
-                      <div className="diagnostics-list">
-                        {response.diagnostics.map((diagnostic, idx) => (
-                          <div key={idx} className="diagnostic-item">
-                            {diagnostic}
-                          </div>
-                        ))}
-                      </div>
-                    </details>
-                  )}
-
-                  {response.error ? (
-                    <div className="response-error">
-                      <strong>Error:</strong> {response.error}
+                return (
+                  <div key={index} className={`response-card ${isError ? 'error' : 'success'}`}>
+                    <div className="response-header">
+                      <span className={`status-badge status-${Math.floor(response.status / 100)}`}>
+                        {response.status || 'ERR'}
+                      </span>
+                      <span className="endpoint">{response.endpoint}</span>
+                      <span className="timestamp">{new Date(response.timestamp).toLocaleTimeString()}</span>
                     </div>
-                  ) : (
-                    <details className="response-details">
-                      <summary>View Response Data</summary>
-                      <pre className="response-json">
-                        {JSON.stringify(response.data, null, 2)}
-                      </pre>
-                    </details>
-                  )}
-                </div>
-              ))}
+
+                    {response.diagnostics && response.diagnostics.length > 0 && (
+                      <details className="response-details diagnostics-section" open>
+                        <summary>🔍 Token Diagnostics ({response.diagnostics.length})</summary>
+                        <div className="diagnostics-list">
+                          {response.diagnostics.map((diagnostic, idx) => (
+                            <div key={idx} className="diagnostic-item">
+                              {diagnostic}
+                            </div>
+                          ))}
+                        </div>
+                      </details>
+                    )}
+
+                    {response.error ? (
+                      <div className="response-error">
+                        <strong>Error:</strong> {response.error}
+                      </div>
+                    ) : isError ? (
+                      <div className="response-error">
+                        <strong>Error:</strong> HTTP {response.status} - {
+                          response.status === 404 ? 'Not Found' :
+                          response.status === 401 ? 'Unauthorized' :
+                          response.status === 403 ? 'Forbidden' :
+                          response.status === 500 ? 'Internal Server Error' :
+                          response.status === 502 ? 'Bad Gateway' :
+                          response.status === 503 ? 'Service Unavailable' :
+                          'Request Failed'
+                        }
+                        {hasData && (
+                          <details className="error-details">
+                            <summary>View error details</summary>
+                            <pre className="response-json">
+                              {JSON.stringify(cleanedData, null, 2)}
+                            </pre>
+                          </details>
+                        )}
+                      </div>
+                    ) : hasData ? (
+                      <details className="response-details">
+                        <summary>
+                          📄 API Response Data
+                          <span className="field-count">
+                            ({Object.keys(cleanedData).length} {Object.keys(cleanedData).length === 1 ? 'field' : 'fields'})
+                          </span>
+                        </summary>
+                        <pre className="response-json">
+                          {JSON.stringify(cleanedData, null, 2)}
+                        </pre>
+                      </details>
+                    ) : isSuccess ? (
+                      <div className="empty-response">
+                        ✓ Request successful (no data returned)
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
