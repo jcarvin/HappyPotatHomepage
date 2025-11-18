@@ -225,6 +225,59 @@
   background: #ccc;
 }
 
+.danger-zone {
+  background: linear-gradient(135deg, #FFF0F0 0%, #FFE0E0 100%);
+  padding: 2rem;
+  border-radius: 16px;
+  margin-top: 2rem;
+  border: 2px solid #FF6B6B;
+  box-shadow: 0 4px 12px rgba(255, 107, 107, 0.15);
+}
+
+.danger-zone h2 {
+  margin: 0 0 1rem 0;
+  color: #8B0000;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.danger-description {
+  margin: 0 0 1.5rem 0;
+  color: #721c24;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.disconnect-btn {
+  padding: 1rem 2rem;
+  background: linear-gradient(135deg, #FF6B6B 0%, #FF4757 100%);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+}
+
+.disconnect-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #FF4757 0%, #FF6B6B 100%);
+  box-shadow: 0 6px 16px rgba(255, 107, 107, 0.4);
+  transform: translateY(-2px);
+}
+
+.disconnect-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.disconnect-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  background: #ccc;
+}
+
 .loading-indicator {
   text-align: center;
   padding: 1.5rem;
@@ -532,6 +585,14 @@
   .custom-btn {
     width: 100%;
     border-radius: 10px;
+  }
+
+  .danger-zone {
+    padding: 1.5rem;
+  }
+
+  .disconnect-btn {
+    width: 100%;
   }
 
   .responses-header {

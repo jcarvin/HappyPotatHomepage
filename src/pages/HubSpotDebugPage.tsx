@@ -199,6 +199,95 @@ function HubSpotDebugPage() {
     }
   };
 
+  const handleDisconnect = async () => {
+    // Show confirmation dialog
+    const confirmed = window.confirm(
+      '⚠️ Are you sure you want to disconnect this app from your HubSpot portal?\n\n' +
+      'This will:\n' +
+      '• Remove the app from your HubSpot account\n' +
+      '• Notify all Super Admins via email\n' +
+      '• Remove all app features, webhooks, and configurations\n' +
+      '• Clear your stored access token\n\n' +
+      'This action cannot be undone.'
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setLoading('Disconnecting');
+    const timestamp = new Date().toISOString();
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session) {
+        addResponse({
+          endpoint: '/appinstalls/v3/external-install',
+          status: 0,
+          data: null,
+          error: 'Not authenticated. Please log in.',
+          timestamp
+        });
+        setLoading(null);
+        return;
+      }
+
+      // Call the DELETE endpoint
+      const response = await fetch('/api/hubspot-proxy', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          endpoint: '/appinstalls/v3/external-install',
+          method: 'DELETE'
+        })
+      });
+
+      const data = await response.json();
+
+      addResponse({
+        endpoint: '/appinstalls/v3/external-install',
+        status: response.status,
+        data,
+        timestamp
+      });
+
+      // If successful (204 No Content), clear the stored token
+      if ((response.status === 204 || response.ok) && user) {
+        // Clear the token from the database
+        await supabase
+          .from('user_profiles')
+          .update({
+            api_token: null,
+            hubspot_refresh_token: null,
+            hubspot_account_id: null
+          })
+          .eq('id', user.id);
+
+        // Refresh user context
+        if (refreshUser) {
+          await refreshUser();
+        }
+
+        // Show success message
+        alert('✅ Successfully disconnected from HubSpot! You can reconnect anytime through the OAuth page.');
+      }
+    } catch (error) {
+      addResponse({
+        endpoint: '/appinstalls/v3/external-install',
+        status: 0,
+        data: null,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        timestamp
+      });
+    } finally {
+      setLoading(null);
+    }
+  };
+
   if (!user) {
     return (
       <>
@@ -314,6 +403,21 @@ function HubSpotDebugPage() {
               </button>
             </div>
           </div>
+        </div>
+
+        <div className="danger-zone">
+          <h2>⚠️ Danger Zone</h2>
+          <p className="danger-description">
+            Disconnecting will remove this app from your HubSpot portal and clear all stored credentials.
+            You can reconnect anytime through the OAuth flow.
+          </p>
+          <button
+            onClick={handleDisconnect}
+            disabled={loading !== null}
+            className="disconnect-btn"
+          >
+            🔌 Disconnect from HubSpot
+          </button>
         </div>
 
         {loading && (
