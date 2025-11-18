@@ -236,11 +236,11 @@ function HubSpotDebugPage() {
       // Get the refresh token from the database
       const { data: profile, error: profileError } = await supabase
         .from('user_profiles')
-        .select('hubspot_refresh_token')
+        .select('refresh_token')
         .eq('id', user.id)
         .single();
 
-      if (profileError || !profile?.hubspot_refresh_token) {
+      if (profileError || !profile?.refresh_token) {
         addResponse({
           endpoint: '/oauth/v1/refresh-tokens/{token}',
           status: 0,
@@ -252,7 +252,7 @@ function HubSpotDebugPage() {
         return;
       }
 
-      const refreshToken = profile.hubspot_refresh_token;
+      const refreshToken = profile.refresh_token;
 
       // Call the DELETE endpoint to revoke the refresh token
       const response = await fetch('/api/hubspot-proxy', {
@@ -283,8 +283,8 @@ function HubSpotDebugPage() {
           .from('user_profiles')
           .update({
             api_token: null,
-            hubspot_refresh_token: null,
-            hubspot_account_id: null
+            refresh_token: null,
+            access_token_expires_at: null
           })
           .eq('id', user.id);
 
