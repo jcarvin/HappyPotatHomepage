@@ -29,7 +29,7 @@ function InstaPotatOAuthPage() {
         // Attempt to bring this popup window to the foreground
         window.focus();
         setFocusRestored(true);
-        
+
         // Reset the focus indicator after a short delay
         setTimeout(() => {
           setFocusRestored(false);
@@ -190,7 +190,7 @@ function InstaPotatOAuthPage() {
 
         {/* Focus restoration indicator */}
         {focusRestored && (
-          <div className="focus-restored-banner">
+          <div className="auth-success-banner">
             🎯 Focus restored! You're back in the popup.
           </div>
         )}
@@ -203,11 +203,11 @@ function InstaPotatOAuthPage() {
               <h3>Third-Party Auth Flow Test</h3>
             </div>
             <p className="test-description">
-              Click the button below to simulate opening a third-party authentication 
-              page (like QuickBooks). After clicking the button on that page, this 
+              Click the button below to simulate opening a third-party authentication
+              page (like QuickBooks). After clicking the button on that page, this
               popup should regain focus.
             </p>
-            <button 
+            <button
               className="test-auth-button"
               onClick={handleTestAuthFlow}
             >

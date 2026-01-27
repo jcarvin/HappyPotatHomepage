@@ -25,7 +25,7 @@ function OAuthPage() {
   const [currentStep, setCurrentStep] = useState<OAuthStep>('legacy');
   const [waitingForAuth, setWaitingForAuth] = useState(false);
   const hasProcessedAuth = useRef(false);
-  const [focusRestored, setFocusRestored] = useState(false);
+  const [authSuccess, setAuthSuccess] = useState(false);
 
   // Auth mode and fields
   const [authMode, setAuthMode] = useState<AuthMode>('login');
@@ -39,19 +39,17 @@ function OAuthPage() {
     initializeApp();
   }, []);
 
-  // Listen for postMessage from the auth callback page to restore focus
+  // Listen for postMessage from the auth callback page to set auth success
   useEffect(() => {
     function handleMessage(event: MessageEvent) {
       if (event.data === 'auth_complete') {
-        // this doesn't work
-        // Attempt to bring this popup window to the foreground
-        window.focus();
-        setFocusRestored(true);
+        setAuthSuccess(true);
+        window.scrollTo(0, 0);
 
-        // Reset the focus indicator after a short delay
+        // Reset the auth success indicator after a short delay
         setTimeout(() => {
-          setFocusRestored(false);
-        }, 3000);
+          setAuthSuccess(false);
+        }, 5000);
       }
     }
 
@@ -522,6 +520,13 @@ function OAuthPage() {
       </div>
 
       <div className="container">
+
+        {/* Auth success indicator */}
+        {authSuccess && (
+          <div className="auth-success-banner">
+            🎯 Auth successful!
+          </div>
+        )}
         <div className="logo">🥔</div>
         <h1 className="title">HappyPotato</h1>
         <p className="subtitle">Where potatoes meet happiness!</p>
@@ -640,7 +645,6 @@ function OAuthPage() {
               </div>
               <p className="test-description">
                 Simulate opening a third-party auth page (like QuickBooks).
-                After completing auth, this popup should regain focus.
               </p>
               <button
                 type="button"
@@ -661,12 +665,6 @@ function OAuthPage() {
           />
         )}
 
-        {/* Focus restoration indicator */}
-        {focusRestored && (
-          <div className="focus-restored-banner">
-            🎯 Focus restored! You're back in the popup.
-          </div>
-        )}
       </div>
     </div>
   );

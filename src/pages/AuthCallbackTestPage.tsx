@@ -67,13 +67,6 @@ function AuthCallbackTestPage() {
               >
                 Complete Auth & Return Focus
               </button>
-              <button
-                className="auth-button secondary"
-                onClick={handleCompleteAuthAndClose}
-                disabled={!hasOpener}
-              >
-                Complete Auth & Close Immediately
-              </button>
             </div>
           )}
 
@@ -82,8 +75,7 @@ function AuthCallbackTestPage() {
             <ol className="info-list">
               <li>This page was opened from a popup window</li>
               <li>When you click the button, it sends a <code>postMessage</code> to the opener</li>
-              <li>The opener (popup) receives the message and calls <code>window.focus()</code></li>
-              <li>The popup window should be brought to the foreground</li>
+              <li>The opener (popup) receives the message and displays a success banner</li>
             </ol>
           </div>
 
