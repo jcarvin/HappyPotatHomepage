@@ -20,15 +20,6 @@ function AuthCallbackTestPage() {
     }
   }
 
-  function handleCompleteAuthAndClose() {
-    if (window.opener) {
-      window.opener.postMessage('auth_complete', '*');
-      window.close();
-    } else {
-      alert('No opener window found. This page should be opened from the InstaPotat OAuth page.');
-    }
-  }
-
   return (
     <div className="auth-callback-page">
         <div className="callback-container">
