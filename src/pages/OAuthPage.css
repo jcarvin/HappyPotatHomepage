@@ -4,7 +4,7 @@
   min-height: 100vh;
   width: 100%;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   position: fixed;
   top: 0;
@@ -57,6 +57,7 @@
   backdrop-filter: blur(10px);
   border: 3px solid #D2691E;
   box-sizing: border-box;
+  margin: auto;
 }
 
 .oauth-page .logo {

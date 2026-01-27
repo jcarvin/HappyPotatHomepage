@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import Header from '../components/Header';
 import './AuthCallbackTestPage.css';
 
 function AuthCallbackTestPage() {
@@ -31,9 +30,7 @@ function AuthCallbackTestPage() {
   }
 
   return (
-    <>
-      <Header />
-      <div className="auth-callback-page">
+    <div className="auth-callback-page">
         <div className="callback-container">
           <div className="callback-icon">🔐</div>
           <h1 className="callback-title">Third-Party Auth Simulation</h1>
@@ -101,8 +98,7 @@ function AuthCallbackTestPage() {
             </div>
           )}
         </div>
-      </div>
-    </>
+    </div>
   );
 }
 

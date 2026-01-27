@@ -636,7 +636,6 @@ function OAuthPage() {
             {/* Third-party auth flow test */}
             <div className="test-mode-section">
               <div className="test-mode-header">
-                <span className="test-badge">TEST</span>
                 <h3>Third-Party Auth Flow Test</h3>
               </div>
               <p className="test-description">
