@@ -9,6 +9,7 @@ import { ProfilePage } from './pages/ProfilePage';
 import OAuthPage from './pages/OAuthPage';
 import InstaPotatOAuthPage from './pages/InstaPotatOAuthPage';
 import HubSpotDebugPage from './pages/HubSpotDebugPage';
+import AuthCallbackTestPage from './pages/AuthCallbackTestPage';
 import { useAuth } from './hooks/useAuth';
 import './App.css';
 
@@ -52,6 +53,7 @@ function App() {
       <Route path="/oauth" element={<OAuthPage />} />
       <Route path="/insta-potat/no-auth" element={<InstaPotatOAuthPage />} />
       <Route path="/debug/hubspot" element={<HubSpotDebugPage />} />
+      <Route path="/auth-callback-test" element={<AuthCallbackTestPage />} />
     </Routes>
   );
 }

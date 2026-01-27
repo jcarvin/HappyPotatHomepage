@@ -12,7 +12,8 @@
   right: 0;
   bottom: 0;
   overflow-x: hidden;
-  padding: 0;
+  overflow-y: auto;
+  padding: 2rem 0;
   margin: 0;
 }
 
@@ -265,6 +266,96 @@
   transform: scale(0.98);
 }
 
+/* Focus restored banner */
+.oauth-page .focus-restored-banner {
+  background: linear-gradient(135deg, #d4edda, #c3e6cb);
+  color: #155724;
+  padding: 1rem 1.5rem;
+  border-radius: 12px;
+  margin-top: 1.5rem;
+  font-weight: 600;
+  font-size: 1.1rem;
+  border: 2px solid #28a745;
+  animation: fadeInScale 0.3s ease-out;
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Test mode section */
+.oauth-page .test-mode-section {
+  background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+  padding: 2rem;
+  border-radius: 15px;
+  margin-top: 2rem;
+  border: 2px solid #2196f3;
+  box-shadow: 0 4px 12px rgba(33, 150, 243, 0.2);
+}
+
+.oauth-page .test-mode-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.oauth-page .test-badge {
+  background: linear-gradient(135deg, #ff6b6b, #ee5a5a);
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.oauth-page .test-mode-header h3 {
+  margin: 0;
+  color: #1565c0;
+  font-size: 1.2rem;
+}
+
+.oauth-page .test-description {
+  color: #1976d2;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+  text-align: left;
+}
+
+.oauth-page .test-auth-button {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  border: none;
+  padding: 1rem 2rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+  width: 100%;
+}
+
+.oauth-page .test-auth-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5);
+}
+
+.oauth-page .test-auth-button:active {
+  transform: translateY(0);
+}
+
 /* Responsive design */
 @media (max-width: 480px) {
   .oauth-page .container {
@@ -282,6 +373,12 @@
 
   .floating-potato {
     font-size: 1.5rem;
+  }
+
+  .oauth-page .test-mode-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
   }
 }
 

@@ -25,6 +25,7 @@ function OAuthPage() {
   const [currentStep, setCurrentStep] = useState<OAuthStep>('legacy');
   const [waitingForAuth, setWaitingForAuth] = useState(false);
   const hasProcessedAuth = useRef(false);
+  const [focusRestored, setFocusRestored] = useState(false);
 
   // Auth mode and fields
   const [authMode, setAuthMode] = useState<AuthMode>('login');
@@ -33,9 +34,35 @@ function OAuthPage() {
   const [username, setUsername] = useState('');
   const [authError, setAuthError] = useState<string | null>(null);
 
+
   useEffect(() => {
     initializeApp();
   }, []);
+
+  // Listen for postMessage from the auth callback page to restore focus
+  useEffect(() => {
+    function handleMessage(event: MessageEvent) {
+      if (event.data === 'auth_complete') {
+        // this doesn't work
+        // Attempt to bring this popup window to the foreground
+        window.focus();
+        setFocusRestored(true);
+
+        // Reset the focus indicator after a short delay
+        setTimeout(() => {
+          setFocusRestored(false);
+        }, 3000);
+      }
+    }
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
+  function handleTestAuthFlow() {
+    // Open the auth callback test page in a new tab
+    window.open('/auth-callback-test', 'newwin', 'width=400,height=300,left=100,top=100');
+  }
 
   // Handle auth state changes - proceed with OAuth flow once authenticated
   useEffect(() => {
@@ -574,7 +601,7 @@ function OAuthPage() {
             <div className="auth-mode-toggle">
               {authMode === 'login' ? (
                 <p>
-                  New potato farmer? {' '}
+                  New potato farmer?? {' '}
                   <button
                     type="button"
                     className="link-btn"
@@ -605,6 +632,25 @@ function OAuthPage() {
                 </p>
               )}
             </div>
+
+            {/* Third-party auth flow test */}
+            <div className="test-mode-section">
+              <div className="test-mode-header">
+                <span className="test-badge">TEST</span>
+                <h3>Third-Party Auth Flow Test</h3>
+              </div>
+              <p className="test-description">
+                Simulate opening a third-party auth page (like QuickBooks).
+                After completing auth, this popup should regain focus.
+              </p>
+              <button
+                type="button"
+                className="test-auth-button"
+                onClick={handleTestAuthFlow}
+              >
+                🔐 Test Third-Party Auth Flow
+              </button>
+            </div>
           </form>
         )}
 
@@ -614,6 +660,13 @@ function OAuthPage() {
             className="welcome-message"
             dangerouslySetInnerHTML={{ __html: welcomeMessage }}
           />
+        )}
+
+        {/* Focus restoration indicator */}
+        {focusRestored && (
+          <div className="focus-restored-banner">
+            🎯 Focus restored! You're back in the popup.
+          </div>
         )}
       </div>
     </div>

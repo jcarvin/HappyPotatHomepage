@@ -13,10 +13,38 @@ interface AccountInfo {
 function InstaPotatOAuthPage() {
   const [statusMessage, setStatusMessage] = useState('🥔 Preparing your InstaPotat...');
   const [isProcessing, setIsProcessing] = useState(true);
+  const [focusRestored, setFocusRestored] = useState(false);
+
+  // Check if test mode is enabled via query param
+  const isTestMode = new URLSearchParams(window.location.search).get('testMode') === 'true';
 
   useEffect(() => {
     handleInstallation();
   }, []);
+
+  // Listen for postMessage from the auth callback page to restore focus
+  useEffect(() => {
+    function handleMessage(event: MessageEvent) {
+      if (event.data === 'auth_complete') {
+        // Attempt to bring this popup window to the foreground
+        window.focus();
+        setFocusRestored(true);
+        
+        // Reset the focus indicator after a short delay
+        setTimeout(() => {
+          setFocusRestored(false);
+        }, 3000);
+      }
+    }
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
+  function handleTestAuthFlow() {
+    // Open the auth callback test page in a new tab
+    window.open('/auth-callback-test', '_blank');
+  }
 
   function getQueryParam(param: string): string | null {
     const params = new URLSearchParams(window.location.search);
@@ -159,6 +187,34 @@ function InstaPotatOAuthPage() {
             🔒 <strong>No personal data collected.</strong> Just pure potato power.
           </p>
         </div>
+
+        {/* Focus restoration indicator */}
+        {focusRestored && (
+          <div className="focus-restored-banner">
+            🎯 Focus restored! You're back in the popup.
+          </div>
+        )}
+
+        {/* Test mode: Third-party auth flow simulation */}
+        {isTestMode && (
+          <div className="test-mode-section">
+            <div className="test-mode-header">
+              <span className="test-badge">TEST MODE</span>
+              <h3>Third-Party Auth Flow Test</h3>
+            </div>
+            <p className="test-description">
+              Click the button below to simulate opening a third-party authentication 
+              page (like QuickBooks). After clicking the button on that page, this 
+              popup should regain focus.
+            </p>
+            <button 
+              className="test-auth-button"
+              onClick={handleTestAuthFlow}
+            >
+              🔐 Test Third-Party Auth Flow
+            </button>
+          </div>
+        )}
       </div>
     </div>
     </>
