@@ -44,7 +44,11 @@ function OAuthPage() {
     function handleMessage(event: MessageEvent) {
       if (event.data === 'auth_complete') {
         setAuthSuccess(true);
-        window.scrollTo(0, 0);
+        // Scroll the .oauth-page container (not window) since it has overflow-y: auto
+        const oauthPage = document.querySelector('.oauth-page');
+        if (oauthPage) {
+          oauthPage.scrollTo(0, 0);
+        }
 
         // Reset the auth success indicator after a short delay
         setTimeout(() => {
