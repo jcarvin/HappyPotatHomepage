@@ -61,7 +61,7 @@ function OAuthPage() {
 
   function handleTestAuthFlow() {
     // Open the auth callback test page in a new tab
-    window.open('/auth-callback-test', 'newwin', 'width=400,height=800,left=800,top=100');
+    window.open('/auth-callback-test', 'newwin', 'width=600,height=800,left=800,top=100');
   }
 
   // Handle auth state changes - proceed with OAuth flow once authenticated
