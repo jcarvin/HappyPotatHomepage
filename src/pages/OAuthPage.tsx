@@ -47,7 +47,7 @@ function OAuthPage() {
         // Scroll the .oauth-page container (not window) since it has overflow-y: auto
         const oauthPage = document.querySelector('.oauth-page');
         if (oauthPage) {
-          oauthPage.scrollTo(0, 0);
+          oauthPage.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
         }
 
         // Reset the auth success indicator after a short delay
