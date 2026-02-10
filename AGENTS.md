@@ -10,6 +10,13 @@ This repository is **not a production-ready codebase**.
 - OAuth / auth callback behavior
 - App-related integration experiments (UI + network behavior)
 
+## Not a HubSpot repo / tooling
+
+This repository is **not** a HubSpot codebase.
+
+- **No HubSpot internal tools are available here** (e.g. `bend`, HubSpot MCP tooling, internal build/test commands).
+- This is a **Vercel + Supabase** app intended to mimic a **true third-party website** with **no ties to HubSpot whatsoever**.
+
 ## Guidance for agents
 
 - **Optimize for testability and iteration speed** over production hardening.
