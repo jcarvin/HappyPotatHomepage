@@ -313,9 +313,11 @@ function AugratinOAuthSkipHsAuthPage() {
     const tierConfig = TIER_CONFIGS[tier];
     const scopeString = tierConfig.scopes.join('%20');
 
+    // Use clean URL with only authComplete param for redirect URI
     const currentUrl = new URL(window.location.href);
-    currentUrl.searchParams.set('authComplete', 'true');
-    const redirectUri = currentUrl.toString();
+    const cleanUrl = new URL(`${currentUrl.origin}${currentUrl.pathname}`);
+    cleanUrl.searchParams.set('authComplete', 'true');
+    const redirectUri = cleanUrl.toString();
 
     const authUrl = `https://app.hubspotqa.com/oauth/authorize?client_id=${CLIENT_ID}&scope=${scopeString}&redirect_uri=${encodeURIComponent(redirectUri)}`;
 
