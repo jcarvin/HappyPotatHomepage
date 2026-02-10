@@ -128,7 +128,8 @@ function AugratinOAuthSkipHsAuthPage() {
       hasCode: !!code,
       stepParam: step,
       user: !!user,
-      authLoading
+      authLoading,
+      isPopup: !!window.opener
     });
 
     // If there's a code but no authComplete, it's from old OAuth flow - ignore it
@@ -144,7 +145,25 @@ function AugratinOAuthSkipHsAuthPage() {
 
     if (authComplete === 'true' && code) {
       console.log('🎉 OAuth callback detected - auth complete!');
-      setStep('success');
+
+      // If we're in a popup, notify the parent window and close
+      if (window.opener && !window.opener.closed) {
+        console.log('📤 Notifying parent window from popup');
+        window.opener.postMessage({
+          type: 'oauth_complete',
+          code,
+          params: window.location.search
+        }, window.location.origin);
+
+        // Give the parent a moment to receive the message, then close
+        setTimeout(() => {
+          console.log('🔒 Closing OAuth popup');
+          window.close();
+        }, 500);
+      } else {
+        // We're in the main window, show success
+        setStep('success');
+      }
     }
   }, []);
 
@@ -170,6 +189,34 @@ function AugratinOAuthSkipHsAuthPage() {
   useEffect(() => {
     console.log('📍 Current step:', step);
   }, [step]);
+
+  // Listen for messages from OAuth popup
+  useEffect(() => {
+    function handleMessage(event: MessageEvent) {
+      // Verify the message is from our origin
+      if (event.origin !== window.location.origin) {
+        return;
+      }
+
+      if (event.data.type === 'oauth_complete') {
+        console.log('📥 Received OAuth completion from popup', event.data);
+
+        // Update the URL with the OAuth callback parameters
+        const newUrl = new URL(window.location.href);
+        const params = new URLSearchParams(event.data.params);
+        params.forEach((value, key) => {
+          newUrl.searchParams.set(key, value);
+        });
+        window.history.replaceState({}, '', newUrl.toString());
+
+        // Show success screen
+        setStep('success');
+      }
+    }
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
 
   function getQueryParam(param: string): string | null {
     const params = new URLSearchParams(window.location.search);
@@ -272,8 +319,42 @@ function AugratinOAuthSkipHsAuthPage() {
 
     const authUrl = `https://app.hubspotqa.com/oauth/authorize?client_id=${CLIENT_ID}&scope=${scopeString}&redirect_uri=${encodeURIComponent(redirectUri)}`;
 
-    // Redirect to HubSpot OAuth
-    window.location.href = authUrl;
+    console.log('🚀 Opening OAuth popup for tier', tier);
+    console.log('📋 Scopes:', tierConfig.scopes.length, 'scopes');
+
+    // Open OAuth in popup instead of redirecting
+    const popup = window.open(
+      authUrl,
+      'hubspot-oauth',
+      'width=600,height=800,left=400,top=100,scrollbars=yes,resizable=yes'
+    );
+
+    if (!popup) {
+      alert('🧀 Popup blocked! Please allow popups for this site.');
+      setStep('tierSelection');
+      return;
+    }
+
+    // Listen for popup to complete
+    const checkPopupClosed = setInterval(() => {
+      if (popup.closed) {
+        clearInterval(checkPopupClosed);
+        console.log('🔔 OAuth popup was closed');
+
+        // Check if we should be on success screen
+        const params = new URLSearchParams(window.location.search);
+        const authComplete = params.get('authComplete');
+        const code = params.get('code');
+
+        if (authComplete === 'true' && code) {
+          console.log('✅ OAuth completed successfully!');
+          setStep('success');
+        } else {
+          console.log('❌ OAuth was cancelled or failed');
+          setStep('tierSelection');
+        }
+      }
+    }, 500);
   }
 
   function handleReturnToMarketplace(): void {
