@@ -473,6 +473,43 @@ input[type="password"]:focus {
   margin-bottom: 2rem;
 }
 
+.oauth-code-display {
+  background: linear-gradient(135deg, #f0f8ff 0%, #e6f3ff 100%);
+  border: 2px solid #4682B4;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin: 2rem 0;
+  animation: fadeIn 0.5s ease-out;
+}
+
+.oauth-code-display h3 {
+  color: #4682B4;
+  font-size: 1.2rem;
+  margin-bottom: 1rem;
+  font-weight: bold;
+}
+
+.code-block {
+  display: block;
+  background: #1e1e1e;
+  color: #4EC9B0;
+  padding: 1rem;
+  border-radius: 8px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.95rem;
+  word-break: break-all;
+  margin: 1rem 0;
+  border: 1px solid #333;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.code-hint {
+  color: #666;
+  font-size: 0.9rem;
+  font-style: italic;
+  margin-top: 0.5rem;
+}
+
 .return-btn {
   background: linear-gradient(45deg, #228B22, #32CD32);
   color: white;

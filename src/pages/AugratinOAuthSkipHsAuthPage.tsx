@@ -115,6 +115,7 @@ function AugratinOAuthSkipHsAuthPage() {
   const [authError, setAuthError] = useState<string | null>(null);
   const [buttonText, setButtonText] = useState('🧀 Enter the Kitchen');
   const [buttonDisabled, setButtonDisabled] = useState(false);
+  const [oauthCode, setOauthCode] = useState<string | null>(null);
 
   // Check for OAuth callback - this takes priority over everything
   useEffect(() => {
@@ -145,6 +146,9 @@ function AugratinOAuthSkipHsAuthPage() {
 
     if (authComplete === 'true' && code) {
       console.log('🎉 OAuth callback detected - auth complete!');
+      
+      // Store the OAuth code
+      setOauthCode(code);
 
       // If we're in a popup, notify the parent window and close
       if (window.opener && !window.opener.closed) {
@@ -200,6 +204,9 @@ function AugratinOAuthSkipHsAuthPage() {
 
       if (event.data.type === 'oauth_complete') {
         console.log('📥 Received OAuth completion from popup', event.data);
+
+        // Store the OAuth code
+        setOauthCode(event.data.code);
 
         // Update the URL with the OAuth callback parameters
         const newUrl = new URL(window.location.href);
@@ -541,6 +548,14 @@ function AugratinOAuthSkipHsAuthPage() {
               Your HubSpot app has been successfully installed with the selected permissions.
               Time to serve up some delicious CRM functionality!
             </p>
+
+            {oauthCode && (
+              <div className="oauth-code-display">
+                <h3>🔑 OAuth Authorization Code</h3>
+                <code className="code-block">{oauthCode}</code>
+                <p className="code-hint">This code can be exchanged for an access token</p>
+              </div>
+            )}
 
             <button className="return-btn" onClick={handleReturnToMarketplace}>
               🍽️ Return to Marketplace
