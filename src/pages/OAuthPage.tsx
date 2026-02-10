@@ -194,6 +194,7 @@ function OAuthPage() {
     try {
       const result = await exchangeCodeForToken({
         code,
+        appName: 'potat',
         clientId: CLIENT_ID,
         clientSecret: CLIENT_SECRET,
         redirectUri: REDIRECT_URI,

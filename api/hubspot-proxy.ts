@@ -19,10 +19,16 @@ export default async function handler(
   }
 
   try {
-    const { endpoint, method = 'GET', body } = req.body;
+    const { endpoint, method = 'GET', body, appName = 'potat' } = req.body;
 
     if (!endpoint) {
       return res.status(400).json({ error: 'endpoint is required' });
+    }
+
+    // Validate appName
+    const validApps = ['potat', 'instapotat', 'loadedpotat', 'potataugratin'];
+    if (!validApps.includes(appName)) {
+      return res.status(400).json({ error: 'Invalid app name. Must be one of: potat, instapotat, loadedpotat, potataugratin' });
     }
 
     // Get user ID from Authorization header
@@ -48,62 +54,71 @@ export default async function handler(
       return res.status(401).json({ error: 'Invalid user token' });
     }
 
-    // Get the user's HubSpot access token from database
-    const { data: profile, error: profileError } = await supabase
-      .from('user_profiles')
-      .select('api_token, refresh_token, access_token_expires_at')
-      .eq('id', user.id)
+    // Get the user's app-specific HubSpot access token from database
+    const { data: appToken, error: tokenError } = await supabase
+      .from('app_tokens')
+      .select('access_token, refresh_token, access_token_expires_at')
+      .eq('user_id', user.id)
+      .eq('app_name', appName)
       .single();
 
-    if (profileError || !profile) {
-      return res.status(404).json({ error: 'User profile not found' });
+    if (tokenError || !appToken) {
+      return res.status(404).json({ 
+        error: `No ${appName} access token found. Please authenticate this app with HubSpot.`,
+        appName
+      });
     }
 
-    if (!profile.api_token) {
-      return res.status(404).json({ error: 'No HubSpot access token found. Please authenticate with HubSpot.' });
+    if (!appToken.access_token) {
+      return res.status(404).json({ 
+        error: `No access token found for ${appName}. Please authenticate with HubSpot.`,
+        appName
+      });
     }
 
-    let accessToken = profile.api_token;
+    let accessToken = appToken.access_token;
     const diagnostics: string[] = [];
 
     // Check if token is expired or expiring soon (within 5 minutes)
     const now = Date.now();
     const fiveMinutesFromNow = new Date(now + 5 * 60 * 1000);
 
-    diagnostics.push(`🔍 Token Check: Has expiry=${!!profile.access_token_expires_at}, Has refresh=${!!profile.refresh_token}`);
-    if (profile.access_token_expires_at) {
-      diagnostics.push(`📅 Expires: ${profile.access_token_expires_at}`);
+    diagnostics.push(`🔍 Token Check (${appName}): Has expiry=${!!appToken.access_token_expires_at}, Has refresh=${!!appToken.refresh_token}`);
+    if (appToken.access_token_expires_at) {
+      diagnostics.push(`📅 Expires: ${appToken.access_token_expires_at}`);
       diagnostics.push(`⏰ Now: ${new Date(now).toISOString()}`);
     }
 
-    console.log('🔍 Token expiry check:', {
-      hasExpiryDate: !!profile.access_token_expires_at,
-      hasRefreshToken: !!profile.refresh_token,
-      expiresAt: profile.access_token_expires_at,
+    console.log(`🔍 Token expiry check for ${appName}:`, {
+      appName,
+      hasExpiryDate: !!appToken.access_token_expires_at,
+      hasRefreshToken: !!appToken.refresh_token,
+      expiresAt: appToken.access_token_expires_at,
       now: new Date(now).toISOString(),
       fiveMinutesFromNow: fiveMinutesFromNow.toISOString()
     });
 
-    if (profile.access_token_expires_at) {
-      const expiresAt = new Date(profile.access_token_expires_at);
+    if (appToken.access_token_expires_at) {
+      const expiresAt = new Date(appToken.access_token_expires_at);
 
       if (expiresAt <= fiveMinutesFromNow) {
-        diagnostics.push('⚠️ Token is expired or expiring soon!');
-        console.log('⚠️ Token is expired or expiring soon!');
+        diagnostics.push(`⚠️ ${appName} token is expired or expiring soon!`);
+        console.log(`⚠️ ${appName} token is expired or expiring soon!`);
 
-        if (!profile.refresh_token) {
-          diagnostics.push('❌ No refresh token available. User needs to re-authenticate.');
-          console.error('❌ No refresh token available. User needs to re-authenticate.');
+        if (!appToken.refresh_token) {
+          diagnostics.push(`❌ No refresh token available for ${appName}. User needs to re-authenticate.`);
+          console.error(`❌ No refresh token available for ${appName}. User needs to re-authenticate.`);
           return res.status(401).json({
-            error: 'Access token expired and no refresh token available. Please re-authenticate with HubSpot.',
+            error: `Access token expired and no refresh token available for ${appName}. Please re-authenticate.`,
+            appName,
             needsReauth: true,
             diagnostics
           });
         }
 
         // Token is expired or expiring soon, refresh it
-        diagnostics.push('🔄 Attempting to refresh access token...');
-        console.log('🔄 Attempting to refresh access token...');
+        diagnostics.push(`🔄 Attempting to refresh ${appName} access token...`);
+        console.log(`🔄 Attempting to refresh ${appName} access token...`);
 
         try {
           const refreshResponse = await fetch(`${req.headers.origin || 'https://happy-potat-homepage.vercel.app'}/api/refresh-hubspot-token`, {
@@ -111,15 +126,19 @@ export default async function handler(
             headers: {
               'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ refresh_token: profile.refresh_token })
+            body: JSON.stringify({ 
+              refresh_token: appToken.refresh_token,
+              app_name: appName
+            })
           });
 
           if (!refreshResponse.ok) {
             const errorData = await refreshResponse.json().catch(() => ({}));
-            diagnostics.push(`❌ Token refresh failed: ${JSON.stringify(errorData)}`);
-            console.error('❌ Token refresh failed:', errorData);
+            diagnostics.push(`❌ ${appName} token refresh failed: ${JSON.stringify(errorData)}`);
+            console.error(`❌ ${appName} token refresh failed:`, errorData);
             return res.status(401).json({
-              error: 'Failed to refresh access token. Please re-authenticate with HubSpot.',
+              error: `Failed to refresh ${appName} access token. Please re-authenticate.`,
+              appName,
               details: errorData,
               needsReauth: true,
               diagnostics
@@ -129,42 +148,44 @@ export default async function handler(
           const newTokens = await refreshResponse.json();
           accessToken = newTokens.access_token;
 
-          // Update the database with new tokens
+          // Update the database with new tokens for this app
           const newExpiresAt = new Date(now + newTokens.expires_in * 1000).toISOString();
-          diagnostics.push(`✅ Token refreshed! New expiry: ${newExpiresAt}`);
+          diagnostics.push(`✅ ${appName} token refreshed! New expiry: ${newExpiresAt}`);
 
           const { error: updateError } = await supabase
-            .from('user_profiles')
+            .from('app_tokens')
             .update({
-              api_token: newTokens.access_token,
+              access_token: newTokens.access_token,
               refresh_token: newTokens.refresh_token,
               access_token_expires_at: newExpiresAt
             })
-            .eq('id', user.id);
+            .eq('user_id', user.id)
+            .eq('app_name', appName);
 
           if (updateError) {
-            diagnostics.push(`⚠️ Warning: Failed to update tokens in database: ${updateError.message}`);
-            console.error('⚠️ Failed to update tokens in database:', updateError);
+            diagnostics.push(`⚠️ Warning: Failed to update ${appName} tokens in database: ${updateError.message}`);
+            console.error(`⚠️ Failed to update ${appName} tokens in database:`, updateError);
             // Continue anyway with the new token
           }
 
-          console.log('✅ Access token refreshed successfully! New expiry:', newExpiresAt);
+          console.log(`✅ ${appName} access token refreshed successfully! New expiry:`, newExpiresAt);
         } catch (refreshError) {
-          diagnostics.push(`❌ Error during refresh: ${refreshError instanceof Error ? refreshError.message : 'Unknown error'}`);
-          console.error('❌ Error during token refresh:', refreshError);
+          diagnostics.push(`❌ Error during ${appName} refresh: ${refreshError instanceof Error ? refreshError.message : 'Unknown error'}`);
+          console.error(`❌ Error during ${appName} token refresh:`, refreshError);
           return res.status(500).json({
-            error: 'Error refreshing token',
+            error: `Error refreshing ${appName} token`,
+            appName,
             message: refreshError instanceof Error ? refreshError.message : 'Unknown error',
             diagnostics
           });
         }
       } else {
-        diagnostics.push('✅ Access token is still valid');
-        console.log('✅ Access token is still valid');
+        diagnostics.push(`✅ ${appName} access token is still valid`);
+        console.log(`✅ ${appName} access token is still valid`);
       }
     } else {
-      diagnostics.push('⚠️ No expiry date stored - cannot determine if token needs refresh');
-      console.log('⚠️ No expiry date stored - cannot determine if token needs refresh');
+      diagnostics.push(`⚠️ No expiry date stored for ${appName} - cannot determine if token needs refresh`);
+      console.log(`⚠️ No expiry date stored for ${appName} - cannot determine if token needs refresh`);
     }
 
     // Make the request to HubSpot API

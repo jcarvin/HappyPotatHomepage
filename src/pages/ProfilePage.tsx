@@ -33,9 +33,10 @@ export function ProfilePage() {
         }
       }
 
-      // Update API token if changed
+      // Update API token if changed (defaults to 'potat' app)
+      // Note: Manual token updates are deprecated in multi-app setup
       if (newApiToken !== user?.apiToken) {
-        const { error } = await updateApiToken(newApiToken);
+        const { error } = await updateApiToken('potat', newApiToken);
         if (error) {
           setMessage({ type: 'error', text: `Failed to update API token: ${error}` });
           hasError = true;

@@ -22,24 +22,51 @@ export default async function handler(
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { refresh_token, client_id, client_secret } = req.body;
+  const { refresh_token, client_id, client_secret, app_name = 'potat' } = req.body;
 
   if (!refresh_token) {
     return res.status(400).json({ error: 'refresh_token is required' });
   }
 
-  // Use values from request body if provided, otherwise fall back to environment variables
-  const clientId = client_id || CLIENT_ID;
-  const clientSecret = client_secret || CLIENT_SECRET;
+  // Validate app_name
+  const validApps = ['potat', 'instapotat', 'loadedpotat', 'potataugratin'];
+  if (!validApps.includes(app_name)) {
+    return res.status(400).json({ error: 'Invalid app_name. Must be one of: potat, instapotat, loadedpotat, potataugratin' });
+  }
+
+  // Get client credentials based on app_name
+  // First check if explicitly provided in request, then check app-specific env vars, then fall back to main env vars
+  let clientId = client_id;
+  let clientSecret = client_secret;
 
   if (!clientId || !clientSecret) {
-    console.error('Missing credentials:', {
+    // Try app-specific environment variables
+    const appNameUpper = app_name.toUpperCase();
+    if (appNameUpper === 'POTAT') {
+      clientId = clientId || process.env.VITE_HUBSPOT_CLIENT_ID || process.env.HUBSPOT_CLIENT_ID;
+      clientSecret = clientSecret || process.env.VITE_HUBSPOT_CLIENT_SECRET || process.env.HUBSPOT_CLIENT_SECRET;
+    } else if (appNameUpper === 'INSTAPOTAT') {
+      clientId = clientId || process.env.VITE_INSTAPOTAT_CLIENT_ID || process.env.VITE_HUBSPOT_CLIENT_ID || process.env.HUBSPOT_CLIENT_ID;
+      clientSecret = clientSecret || process.env.VITE_INSTAPOTAT_CLIENT_SECRET || process.env.VITE_HUBSPOT_CLIENT_SECRET || process.env.HUBSPOT_CLIENT_SECRET;
+    } else if (appNameUpper === 'LOADEDPOTAT') {
+      clientId = clientId || process.env.VITE_LOADEDPOTAT_CLIENT_ID;
+      clientSecret = clientSecret || process.env.VITE_LOADEDPOTAT_CLIENT_SECRET;
+    } else if (appNameUpper === 'POTATAUGRATIN') {
+      clientId = clientId || process.env.VITE_AU_GRATIN_CLIENT_ID;
+      clientSecret = clientSecret || process.env.VITE_AU_GRATIN_CLIENT_SECRET;
+    }
+  }
+
+  if (!clientId || !clientSecret) {
+    console.error(`Missing credentials for ${app_name}:`, {
+      appName: app_name,
       hasClientId: !!clientId,
       hasClientSecret: !!clientSecret,
-      envVars: Object.keys(process.env).filter(key => key.includes('HUBSPOT'))
+      envVars: Object.keys(process.env).filter(key => key.includes('HUBSPOT') || key.includes('GRATIN') || key.includes('POTAT'))
     });
     return res.status(500).json({
-      error: 'Server configuration error - missing HubSpot credentials',
+      error: `Server configuration error - missing HubSpot credentials for ${app_name}`,
+      appName: app_name,
       details: {
         hasClientId: !!clientId,
         hasClientSecret: !!clientSecret
@@ -64,9 +91,10 @@ export default async function handler(
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      console.error('HubSpot token refresh failed:', errorData);
+      console.error(`HubSpot token refresh failed for ${app_name}:`, errorData);
       return res.status(response.status).json({
-        error: 'Failed to refresh token',
+        error: `Failed to refresh ${app_name} token`,
+        appName: app_name,
         details: errorData
       });
     }
@@ -77,12 +105,14 @@ export default async function handler(
     return res.status(200).json({
       access_token: tokenData.access_token,
       refresh_token: tokenData.refresh_token,
-      expires_in: tokenData.expires_in
+      expires_in: tokenData.expires_in,
+      app_name: app_name
     });
   } catch (error) {
-    console.error('Error refreshing HubSpot token:', error);
+    console.error(`Error refreshing ${app_name} HubSpot token:`, error);
     return res.status(500).json({
       error: 'Internal server error',
+      appName: app_name,
       message: error instanceof Error ? error.message : 'Unknown error'
     });
   }

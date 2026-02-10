@@ -6,6 +6,7 @@ import './AugratinOAuth.css';
 
 const CLIENT_ID = import.meta.env.VITE_AU_GRATIN_CLIENT_ID;
 const CLIENT_SECRET = import.meta.env.VITE_AU_GRATIN_CLIENT_SECRET;
+const REDIRECT_URI = import.meta.env.VITE_AU_GRATIN_REDIRECT_URI;
 
 type Step = 'auth' | 'tierSelection' | 'authorizing' | 'success';
 type AuthMode = 'login' | 'signup';
@@ -150,7 +151,7 @@ function AugratinOAuthSkipHsAuthPage() {
 
     if (authComplete === 'true' && code) {
       console.log('🎉 OAuth callback detected - auth complete!');
-      
+
       // Store the OAuth code
       setOauthCode(code);
 
@@ -252,17 +253,18 @@ function AugratinOAuthSkipHsAuthPage() {
     console.log('🔄 Starting token exchange for code:', code.substring(0, 10) + '...');
 
     // Build the redirect URI (same as what was used for OAuth)
-    const currentUrl = new URL(window.location.href);
-    const cleanUrl = new URL(`${currentUrl.origin}${currentUrl.pathname}`);
-    cleanUrl.searchParams.set('authComplete', 'true');
-    const redirectUri = cleanUrl.toString();
+    // const currentUrl = new URL(window.location.href);
+    // const cleanUrl = new URL(`${currentUrl.origin}${currentUrl.pathname}`);
+    // cleanUrl.searchParams.set('authComplete', 'true');
+    // const redirectUri = cleanUrl.toString();
 
     try {
       const result = await exchangeCodeForToken({
         code,
+        appName: 'potataugratin',
         clientId: CLIENT_ID,
         clientSecret: CLIENT_SECRET,
-        redirectUri,
+        redirectUri: REDIRECT_URI,
         userId: user.id
       });
 

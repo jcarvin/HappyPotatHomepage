@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import type { Session } from '@supabase/supabase-js';
+import type { AppName } from './appConfig';
 
 export interface UserCredentials {
   email: string;
@@ -198,8 +199,9 @@ export async function getCurrentUser(): Promise<{ user: AuthUser | null; error: 
 
 /**
  * Ensure user profile exists (creates one if it doesn't)
+ * Note: Still used by registration flow
  */
-async function ensureUserProfile(): Promise<{ success: boolean; error: string | null }> {
+export async function ensureUserProfile(): Promise<{ success: boolean; error: string | null }> {
   try {
     const { data: { user } } = await supabase.auth.getUser();
 
@@ -251,15 +253,16 @@ async function ensureUserProfile(): Promise<{ success: boolean; error: string | 
 }
 
 /**
- * Update user's API token
+ * Update user's API token for a specific app
  */
 export async function updateApiToken(
+  appName: AppName,
   apiToken: string,
   refreshToken?: string,
   expiresIn?: number
 ): Promise<{ success: boolean; error: string | null }> {
   try {
-    console.log('🔍 updateApiToken: Starting update process...');
+    console.log(`🔍 updateApiToken: Starting update process for ${appName}...`);
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
@@ -267,61 +270,36 @@ export async function updateApiToken(
       return { success: false, error: 'Not authenticated' };
     }
 
-    console.log('✅ updateApiToken: User authenticated:', user.id);
-
-    // Ensure profile exists before updating
-    const { success: profileExists, error: profileError } = await ensureUserProfile();
-    if (!profileExists) {
-      console.error('❌ updateApiToken: Could not ensure profile exists:', profileError);
-      return { success: false, error: profileError };
-    }
-
-    console.log('📝 updateApiToken: Attempting to update token for user...');
+    console.log(`✅ updateApiToken: User authenticated: ${user.id}`);
 
     // Calculate expiry time if provided
     const expiresAt = expiresIn
       ? new Date(Date.now() + expiresIn * 1000).toISOString()
       : null;
 
-    // Build update object
-    const updateData: {
-      api_token: string;
-      refresh_token?: string;
-      access_token_expires_at?: string | null;
-    } = {
-      api_token: apiToken
-    };
-
-    if (refreshToken) {
-      updateData.refresh_token = refreshToken;
-    }
-
-    if (expiresAt) {
-      updateData.access_token_expires_at = expiresAt;
-    }
-
-    const { data, error } = await supabase
-      .from('user_profiles')
-      .update(updateData)
-      .eq('id', user.id)
-      .select(); // Add select to see what was updated
+    // Call new database function for app-specific tokens
+    const { data, error } = await supabase.rpc('upsert_app_token', {
+      p_user_id: user.id,
+      p_app_name: appName,
+      p_access_token: apiToken,
+      p_refresh_token: refreshToken || null,
+      p_access_token_expires_at: expiresAt
+    });
 
     if (error) {
-      console.error('❌ updateApiToken: Database error:', error);
+      console.error(`❌ updateApiToken: Database error for ${appName}:`, error);
       return { success: false, error: error.message };
     }
 
-    console.log('📊 updateApiToken: Update result:', data);
-
-    if (!data || data.length === 0) {
-      console.warn('⚠️ updateApiToken: No rows were updated even after ensuring profile exists!');
-      return { success: false, error: 'Failed to update profile. Please check database permissions.' };
+    if (!data || data.success !== true) {
+      console.error(`❌ updateApiToken: Failed to save ${appName} token`);
+      return { success: false, error: 'Failed to save token' };
     }
 
-    console.log('✅ updateApiToken: Successfully updated token!');
+    console.log(`✅ updateApiToken: Successfully updated ${appName} token!`);
     return { success: true, error: null };
   } catch (err) {
-    console.error('❌ updateApiToken: Unexpected error:', err);
+    console.error(`❌ updateApiToken: Unexpected error for ${appName}:`, err);
     return { success: false, error: err instanceof Error ? err.message : 'Update failed' };
   }
 }
@@ -436,36 +414,19 @@ export async function consumeOAuthState(stateToken: string): Promise<{ userId: s
 }
 
 /**
- * Update API token for a specific user (by user ID)
+ * Update API token for a specific user and app (by user ID)
  * This is used in OAuth callback where we don't have an authenticated session
  * but we have the user ID from the state token
  */
 export async function updateApiTokenForUser(
   userId: string,
+  appName: AppName,
   apiToken: string,
   refreshToken?: string,
   expiresIn?: number
 ): Promise<{ success: boolean; error: string | null }> {
   try {
-    console.log('🔍 updateApiTokenForUser: Updating token for user:', userId);
-
-    // First check if profile exists to determine username
-    const { data: existingProfile } = await supabase
-      .from('user_profiles')
-      .select('username')
-      .eq('id', userId)
-      .single();
-
-    let username: string;
-    if (existingProfile?.username) {
-      // Use existing username
-      username = existingProfile.username;
-      console.log('✅ Found existing username:', username);
-    } else {
-      // Generate a default username
-      username = `user_${userId.slice(0, 8)}`;
-      console.log('📝 Using default username:', username);
-    }
+    console.log(`🔍 updateApiTokenForUser: Updating ${appName} token for user:`, userId);
 
     // Calculate expiry time if provided
     const expiresAt = expiresIn
@@ -474,35 +435,29 @@ export async function updateApiTokenForUser(
 
     // Use the database function that bypasses RLS with SECURITY DEFINER
     // This is necessary because OAuth callbacks happen in unauthenticated contexts
-    console.log('📝 Calling database function to upsert profile...');
-    const { data, error } = await supabase.rpc('upsert_user_api_token', {
+    console.log(`📝 Calling database function to upsert ${appName} token...`);
+    const { data, error } = await supabase.rpc('upsert_app_token', {
       p_user_id: userId,
-      p_username: username,
-      p_api_token: apiToken,
+      p_app_name: appName,
+      p_access_token: apiToken,
       p_refresh_token: refreshToken || null,
       p_access_token_expires_at: expiresAt
     });
 
     if (error) {
-      console.error('❌ Failed to upsert profile via function:', error);
+      console.error(`❌ Failed to upsert ${appName} token via function:`, error);
       return { success: false, error: error.message };
     }
 
-    if (!data) {
-      console.warn('⚠️ No data returned from upsert function');
-      return { success: false, error: 'Failed to save profile' };
+    if (!data || data.success !== true) {
+      console.warn(`⚠️ Failed to save ${appName} token`);
+      return { success: false, error: 'Failed to save token' };
     }
 
-    // Check if the function returned an error
-    if (data.success === false) {
-      console.error('❌ Database function returned error:', data.error);
-      return { success: false, error: data.error || 'Failed to save profile' };
-    }
-
-    console.log('✅ Token saved successfully via database function');
+    console.log(`✅ ${appName} token saved successfully via database function`);
     return { success: true, error: null };
   } catch (err) {
-    console.error('❌ Unexpected error updating token:', err);
+    console.error(`❌ Unexpected error updating ${appName} token:`, err);
     return { success: false, error: err instanceof Error ? err.message : 'Update failed' };
   }
 }
@@ -594,6 +549,72 @@ export async function getValidAccessToken(): Promise<{ token: string | null; err
   } catch (err) {
     console.error('❌ Error getting valid access token:', err);
     return { token: null, error: err instanceof Error ? err.message : 'Failed to get access token' };
+  }
+}
+
+/**
+ * Get app-specific token for the current user
+ */
+export async function getAppToken(
+  appName: AppName
+): Promise<{ token: string | null; refreshToken: string | null; expiresAt: string | null; error: string | null }> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      return { token: null, refreshToken: null, expiresAt: null, error: 'Not authenticated' };
+    }
+
+    const { data, error } = await supabase
+      .from('app_tokens')
+      .select('access_token, refresh_token, access_token_expires_at')
+      .eq('user_id', user.id)
+      .eq('app_name', appName)
+      .single();
+
+    if (error || !data) {
+      console.log(`⚠️ No ${appName} token found for user`);
+      return { token: null, refreshToken: null, expiresAt: null, error: `No ${appName} token found. Please authenticate this app.` };
+    }
+
+    return {
+      token: data.access_token,
+      refreshToken: data.refresh_token,
+      expiresAt: data.access_token_expires_at,
+      error: null
+    };
+  } catch (err) {
+    console.error(`❌ Error getting ${appName} token:`, err);
+    return { token: null, refreshToken: null, expiresAt: null, error: err instanceof Error ? err.message : 'Failed to get token' };
+  }
+}
+
+/**
+ * Get all installed apps for the current user
+ */
+export async function getInstalledApps(): Promise<{ apps: AppName[]; error: string | null }> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      return { apps: [], error: 'Not authenticated' };
+    }
+
+    const { data, error } = await supabase
+      .from('app_tokens')
+      .select('app_name')
+      .eq('user_id', user.id);
+
+    if (error) {
+      console.error('❌ Error fetching installed apps:', error);
+      return { apps: [], error: error.message };
+    }
+
+    const apps = (data || []).map(row => row.app_name as AppName);
+    return { apps, error: null };
+  } catch (err) {
+    console.error('❌ Error getting installed apps:', err);
+    return { apps: [], error: err instanceof Error ? err.message : 'Failed to get apps' };
   }
 }
 

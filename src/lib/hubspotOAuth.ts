@@ -1,7 +1,9 @@
 import { updateApiToken, updateApiTokenForUser } from './auth';
+import type { AppName } from './appConfig';
 
 export interface TokenExchangeOptions {
   code: string;
+  appName: AppName; // Which app these tokens are for
   clientId: string;
   clientSecret: string;
   redirectUri: string;
@@ -29,9 +31,9 @@ export interface AccountInfo {
  * Exchange OAuth authorization code for access and refresh tokens
  */
 export async function exchangeCodeForToken(options: TokenExchangeOptions): Promise<TokenExchangeResult> {
-  const { code, clientId, clientSecret, redirectUri, userId } = options;
+  const { code, appName, clientId, clientSecret, redirectUri, userId } = options;
 
-  console.log('🔄 Exchanging OAuth code for tokens...');
+  console.log(`🔄 Exchanging OAuth code for tokens (app: ${appName})...`);
 
   try {
     // Exchange code for tokens via proxy
@@ -87,9 +89,10 @@ export async function exchangeCodeForToken(options: TokenExchangeOptions): Promi
 
     if (userId) {
       // Save for specific user (OAuth callback without auth session)
-      console.log('🔑 Saving tokens for user:', userId);
+      console.log(`🔑 Saving ${appName} tokens for user:`, userId);
       const result = await updateApiTokenForUser(
         userId,
+        appName,
         data.access_token,
         data.refresh_token,
         data.expires_in
@@ -98,8 +101,9 @@ export async function exchangeCodeForToken(options: TokenExchangeOptions): Promi
       saveError = result.error;
     } else {
       // Save for current authenticated user
-      console.log('🔑 Saving tokens for authenticated user');
+      console.log(`🔑 Saving ${appName} tokens for authenticated user`);
       const result = await updateApiToken(
+        appName,
         data.access_token,
         data.refresh_token,
         data.expires_in
