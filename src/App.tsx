@@ -7,6 +7,8 @@ import Footer from './components/Footer';
 import { LoginPage } from './pages/LoginPage';
 import { ProfilePage } from './pages/ProfilePage';
 import OAuthPage from './pages/OAuthPage';
+import AugratinOAuthSkipHsAuthPage from './pages/AugratinOAuthSkipHsAuthPage';
+import AugratinOAuthWithHsAuthPage from './pages/AugratinOAuthWithHsAuthPage';
 import InstaPotatOAuthPage from './pages/InstaPotatOAuthPage';
 import HubSpotDebugPage from './pages/HubSpotDebugPage';
 import AuthCallbackTestPage from './pages/AuthCallbackTestPage';
@@ -51,6 +53,8 @@ function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/profile" element={<ProfilePage />} />
       <Route path="/oauth" element={<OAuthPage />} />
+      <Route path="/augratin-oauth/skip-hs-auth" element={<AugratinOAuthSkipHsAuthPage />} />
+      <Route path="/augratin-oauth/with-hs-auth" element={<AugratinOAuthWithHsAuthPage />} />
       <Route path="/insta-potat/no-auth" element={<InstaPotatOAuthPage />} />
       <Route path="/debug/hubspot" element={<HubSpotDebugPage />} />
       <Route path="/auth-callback-test" element={<AuthCallbackTestPage />} />
