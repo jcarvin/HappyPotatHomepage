@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
-import { loginUser, registerUser, createOAuthState, consumeOAuthState, updateApiTokenForUser } from '../lib/auth';
+import { loginUser, registerUser, createOAuthState, consumeOAuthState } from '../lib/auth';
+import { exchangeCodeForToken } from '../lib/hubspotOAuth';
 import { useAuth } from '../hooks/useAuth';
 import './OAuthPage.css';
 
@@ -9,10 +10,6 @@ const REDIRECT_URI = import.meta.env.VITE_HUBSPOT_REDIRECT_URI;
 
 type OAuthStep = 'authorize' | 'finalize' | 'legacy';
 type AuthMode = 'login' | 'signup';
-
-interface AccountInfo {
-  portalId: string;
-}
 
 function OAuthPage() {
   const { user, loading: authLoading } = useAuth();
@@ -122,17 +119,6 @@ function OAuthPage() {
     }
   }
 
-  async function fetchAccountInfo(token: string): Promise<AccountInfo> {
-    const response = await fetch('https://us-central1-hubspot-oauth-proxy.cloudfunctions.net/get_account_info', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ access_token: token })
-    });
-    return response.json();
-  }
-
   function initializeApp(): void {
     const step = getQueryParam('step') as OAuthStep | null;
     const code = getQueryParam('code');
@@ -196,99 +182,40 @@ function OAuthPage() {
     console.log('✅ State validation successful - proceeding with installation for user:', userId);
 
     // Exchange code for token and associate with the user
-    exchangeCodeForToken(code, userId);
+    handleExchangeCodeForToken(code, userId);
   }
 
-  async function exchangeCodeForToken(code: string, userId?: string): Promise<void> {
+  async function handleExchangeCodeForToken(code: string, userId?: string): Promise<void> {
     setButtonText('🔄 Validating your potato credentials...');
     setShowWelcome(true);
     setShowForm(false);
     setWelcomeMessage('🔄 Validating your potato credentials...');
 
     try {
-      const response = await fetch('https://us-central1-hubspot-oauth-proxy.cloudfunctions.net/exchange_code', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          code: code,
-          client_id: CLIENT_ID,
-          client_secret: CLIENT_SECRET,
-          redirect_uri: REDIRECT_URI
-        })
+      const result = await exchangeCodeForToken({
+        code,
+        clientId: CLIENT_ID,
+        clientSecret: CLIENT_SECRET,
+        redirectUri: REDIRECT_URI,
+        userId
       });
 
-      const data = await response.json();
+      if (!result.success) {
+        console.error('❌ Token exchange failed:', result.error);
+        showError(`🍠 ${result.error || 'Something went wrong in the potato field! Please try again.'}`);
+        return;
+      }
 
-      if (data.access_token) {
-        // Store in localStorage as backup
-        localStorage.setItem('access_token', data.access_token);
-        if (data.refresh_token) {
-          localStorage.setItem('refresh_token', data.refresh_token);
-        }
+      console.log('✅ Token exchange and save complete!');
 
-        // Log token information for debugging
-        console.log('🔑 Token exchange successful:', {
-          hasAccessToken: !!data.access_token,
-          hasRefreshToken: !!data.refresh_token,
-          expiresIn: data.expires_in
-        });
-
-        // Save tokens to Supabase user profile
-        console.log('💾 Saving HubSpot tokens to Supabase...');
-
-        let success = false;
-        let saveError: string | null = null;
-
-        if (userId) {
-          // We have a userId from the state token - use it directly (OAuth callback in iframe)
-          console.log('🔑 Using userId from state token:', userId);
-          const result = await updateApiTokenForUser(
-            userId,
-            data.access_token,
-            data.refresh_token,
-            data.expires_in
-          );
-          success = result.success;
-          saveError = result.error;
-        } else {
-          // No userId provided - must be authenticated, use current user (legacy flow)
-          console.log('🔑 Using current authenticated user');
-          const { updateApiToken } = await import('../lib/auth');
-          const result = await updateApiToken(
-            data.access_token,
-            data.refresh_token,
-            data.expires_in
-          );
-          success = result.success;
-          saveError = result.error;
-        }
-
-        if (saveError) {
-          console.error('❌ Failed to save access token to Supabase:', saveError);
-          showError('🍠 Token received but failed to save to your profile. Please try again.');
-          return;
-        }
-
-        if (success) {
-          console.log('✅ Successfully saved HubSpot access token to Supabase!');
-        }
-
-        // Fetch account info
-        const accountData = await fetchAccountInfo(data.access_token);
-
-        if (accountData.portalId) {
-          displayWelcomeMessage(accountData.portalId);
-        } else {
-          console.error('Portal ID not found in response', accountData);
-          showError('🥔 Oops! Could not find your potato farm ID. Please try again!');
-        }
+      if (result.portalId) {
+        displayWelcomeMessage(result.portalId);
       } else {
-        throw new Error('No access token received');
+        console.error('Portal ID not found in result');
+        showError('🥔 Oops! Could not find your potato farm ID. Please try again!');
       }
     } catch (error) {
-      console.error('Error during token exchange or fetching account info:', error);
+      console.error('Error during token exchange:', error);
       showError('🍠 Something went wrong in the potato field! Please try again.');
     }
   }
@@ -364,7 +291,7 @@ function OAuthPage() {
 
       setTimeout(() => {
         clearInterval(loadingInterval);
-        exchangeCodeForToken(code);
+        handleExchangeCodeForToken(code);
       }, 2000);
       return;
     }

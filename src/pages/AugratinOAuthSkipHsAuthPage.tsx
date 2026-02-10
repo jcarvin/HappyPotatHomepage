@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { loginUser, registerUser } from '../lib/auth';
 import { useAuth } from '../hooks/useAuth';
+import { exchangeCodeForToken } from '../lib/hubspotOAuth';
 import './AugratinOAuth.css';
 
 const CLIENT_ID = import.meta.env.VITE_AU_GRATIN_CLIENT_ID;
+const CLIENT_SECRET = import.meta.env.VITE_AU_GRATIN_CLIENT_SECRET;
 
 type Step = 'auth' | 'tierSelection' | 'authorizing' | 'success';
 type AuthMode = 'login' | 'signup';
@@ -116,6 +118,8 @@ function AugratinOAuthSkipHsAuthPage() {
   const [buttonText, setButtonText] = useState('🧀 Enter the Kitchen');
   const [buttonDisabled, setButtonDisabled] = useState(false);
   const [oauthCode, setOauthCode] = useState<string | null>(null);
+  const [portalId, setPortalId] = useState<string | null>(null);
+  const [exchangingToken, setExchangingToken] = useState(false);
 
   // Check for OAuth callback - this takes priority over everything
   useEffect(() => {
@@ -165,8 +169,8 @@ function AugratinOAuthSkipHsAuthPage() {
           window.close();
         }, 500);
       } else {
-        // We're in the main window, show success
-        setStep('success');
+        // We're in the main window, exchange the code for tokens
+        handleTokenExchange(code);
       }
     }
   }, []);
@@ -216,18 +220,76 @@ function AugratinOAuthSkipHsAuthPage() {
         });
         window.history.replaceState({}, '', newUrl.toString());
 
-        // Show success screen
-        setStep('success');
+        // Exchange the code for tokens
+        handleTokenExchange(event.data.code);
       }
     }
 
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, []);
+  }, [user]);
 
   function getQueryParam(param: string): string | null {
     const params = new URLSearchParams(window.location.search);
     return params.get(param);
+  }
+
+  async function handleTokenExchange(code: string): Promise<void> {
+    if (exchangingToken) {
+      console.log('⚠️ Token exchange already in progress');
+      return;
+    }
+
+    if (!user) {
+      console.error('❌ No authenticated user for token exchange');
+      setAuthError('🧀 Please log in first before completing OAuth');
+      return;
+    }
+
+    setExchangingToken(true);
+    setStep('authorizing');
+
+    console.log('🔄 Starting token exchange for code:', code.substring(0, 10) + '...');
+
+    // Build the redirect URI (same as what was used for OAuth)
+    const currentUrl = new URL(window.location.href);
+    const cleanUrl = new URL(`${currentUrl.origin}${currentUrl.pathname}`);
+    cleanUrl.searchParams.set('authComplete', 'true');
+    const redirectUri = cleanUrl.toString();
+
+    try {
+      const result = await exchangeCodeForToken({
+        code,
+        clientId: CLIENT_ID,
+        clientSecret: CLIENT_SECRET,
+        redirectUri,
+        userId: user.id
+      });
+
+      if (!result.success) {
+        console.error('❌ Token exchange failed:', result.error);
+        setAuthError(`🧀 Failed to complete installation: ${result.error}`);
+        setStep('tierSelection');
+        setExchangingToken(false);
+        return;
+      }
+
+      console.log('✅ Token exchange successful!');
+
+      // Store the portal ID
+      if (result.portalId) {
+        setPortalId(result.portalId);
+      }
+
+      // Show success screen
+      setStep('success');
+    } catch (error) {
+      console.error('❌ Unexpected error during token exchange:', error);
+      setAuthError(`🧀 Unexpected error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setStep('tierSelection');
+    } finally {
+      setExchangingToken(false);
+    }
   }
 
   async function handleAuthSubmit(event: React.FormEvent<HTMLFormElement>): Promise<void> {
@@ -546,14 +608,22 @@ function AugratinOAuthSkipHsAuthPage() {
             <h2>Perfect! Your Au Gratin is Ready!</h2>
             <p className="success-description">
               Your HubSpot app has been successfully installed with the selected permissions.
-              Time to serve up some delicious CRM functionality!
+              All tokens have been securely saved to your account!
             </p>
 
-            {oauthCode && (
+            {portalId && (
+              <div className="oauth-code-display">
+                <h3>🏢 Portal ID</h3>
+                <code className="code-block">{portalId}</code>
+                <p className="code-hint">Your HubSpot account is now connected</p>
+              </div>
+            )}
+
+            {oauthCode && !portalId && (
               <div className="oauth-code-display">
                 <h3>🔑 OAuth Authorization Code</h3>
                 <code className="code-block">{oauthCode}</code>
-                <p className="code-hint">This code can be exchanged for an access token</p>
+                <p className="code-hint">Tokens saved successfully</p>
               </div>
             )}
 
