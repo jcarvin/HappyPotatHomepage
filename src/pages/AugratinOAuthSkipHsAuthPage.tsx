@@ -18,6 +18,7 @@ interface TierConfig {
   description: string;
   features: string[];
   scopes: string[];
+  optionalScopes: string[];
 }
 
 const TIER_CONFIGS: Record<Tier, TierConfig> = {
@@ -39,7 +40,8 @@ const TIER_CONFIGS: Record<Tier, TierConfig> = {
       'crm.objects.deals.write',
       'crm.lists.read',
       'crm.lists.write'
-    ]
+    ],
+    optionalScopes: []
   },
   2: {
     name: 'Enhanced',
@@ -60,7 +62,9 @@ const TIER_CONFIGS: Record<Tier, TierConfig> = {
       'crm.objects.deals.read',
       'crm.objects.deals.write',
       'crm.lists.read',
-      'crm.lists.write',
+      'crm.lists.write'
+    ],
+    optionalScopes: [
       'conversations.read',
       'conversations.write',
       'files',
@@ -89,18 +93,20 @@ const TIER_CONFIGS: Record<Tier, TierConfig> = {
       'crm.objects.deals.write',
       'crm.lists.read',
       'crm.lists.write',
+      'automation.sequences.read',
+      'automation.sequences.enrollments.write',
+      'scheduler.meetings.meeting-link.read',
+      'settings.users.read',
+      'settings.users.write'
+    ],
+    optionalScopes: [
       'conversations.read',
       'conversations.write',
       'files',
       'forms',
       'timeline',
       'automation',
-      'analytics.behavioral_events.send',
-      'automation.sequences.read',
-      'automation.sequences.enrollments.write',
-      'scheduler.meetings.meeting-link.read',
-      'settings.users.read',
-      'settings.users.write'
+      'analytics.behavioral_events.send'
     ]
   }
 };
@@ -383,6 +389,7 @@ function AugratinOAuthSkipHsAuthPage() {
     // Build OAuth URL
     const tierConfig = TIER_CONFIGS[tier];
     const scopeString = tierConfig.scopes.join('%20');
+    const optionalScopeString = tierConfig.optionalScopes.join('%20');
 
     // Use clean URL with only authComplete param for redirect URI
     const currentUrl = new URL(window.location.href);
@@ -390,10 +397,16 @@ function AugratinOAuthSkipHsAuthPage() {
     cleanUrl.searchParams.set('authComplete', 'true');
     const redirectUri = cleanUrl.toString();
 
-    const authUrl = `https://app.hubspotqa.com/oauth/authorize?client_id=${CLIENT_ID}&scope=${scopeString}&redirect_uri=${encodeURIComponent(redirectUri)}`;
+    let authUrl = `https://app.hubspotqa.com/oauth/authorize?client_id=${CLIENT_ID}&scope=${scopeString}&redirect_uri=${encodeURIComponent(redirectUri)}`;
+
+    // Add optional_scopes parameter if there are any
+    if (tierConfig.optionalScopes.length > 0) {
+      authUrl += `&optional_scopes=${optionalScopeString}`;
+    }
 
     console.log('🚀 Opening OAuth popup for tier', tier);
-    console.log('📋 Scopes:', tierConfig.scopes.length, 'scopes');
+    console.log('📋 Scopes:', tierConfig.scopes.length, 'required/conditional scopes');
+    console.log('📋 Optional Scopes:', tierConfig.optionalScopes.length, 'optional scopes');
 
     // Open OAuth in popup instead of redirecting
     const popup = window.open(
@@ -578,7 +591,8 @@ function AugratinOAuthSkipHsAuthPage() {
                     </div>
 
                     <div className="tier-scope-count">
-                      {config.scopes.length} permissions
+                      {config.scopes.length} required
+                      {config.optionalScopes.length > 0 && ` + ${config.optionalScopes.length} optional`}
                     </div>
 
                     <button
