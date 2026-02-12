@@ -24,16 +24,6 @@ const REDIRECT_URI = import.meta.env.VITE_LOADEDPOTAT_REDIRECT_URI;
 type OAuthStep = 'authorize' | 'finalize' | 'legacy';
 type AuthMode = 'login' | 'signup';
 
-// Scopes needed for MCP tools (contacts and deals)
-const REQUIRED_SCOPES = [
-  'crm.objects.contacts.read',
-  'crm.objects.contacts.write',
-  'crm.objects.deals.read',
-  'crm.objects.deals.write',
-  'crm.schemas.contacts.read',  // For list_contact_properties tool
-  'crm.schemas.deals.read',     // For list_deal_properties tool (if added)
-];
-
 function LoadedPotatOAuthPage() {
   const { user, loading: authLoading } = useAuth();
   const [waitingForAuth, setWaitingForAuth] = useState(false);
@@ -181,47 +171,112 @@ function LoadedPotatOAuthPage() {
   }
 
   function showError(message: string): void {
-    setShowForm(false);
-    setShowWelcome(true);
     setWelcomeMessage(message);
+    setShowWelcome(true);
+    setShowForm(false);
+
+    // Add error class temporarily
+    const welcomeEl = document.getElementById('welcomeMessage');
+    if (welcomeEl) {
+      welcomeEl.classList.add('error');
+    }
+
+    setTimeout(() => {
+      setShowWelcome(false);
+      setShowForm(true);
+      if (welcomeEl) {
+        welcomeEl.classList.remove('error');
+      }
+    }, 8000);
   }
 
   async function handleAuthorizeSubmit(): Promise<void> {
-    if (!user) {
-      console.log('🚨 No user found after authentication');
+    const returnUrl = getQueryParam('returnUrl');
+
+    if (!returnUrl) {
+      showError('🥔 Missing returnUrl! Your potato needs a destination!');
       return;
     }
 
-    console.log('🥔 User authenticated, creating OAuth state...');
+    setButtonText('🔐 Creating secure state token...');
 
-    // Create and store OAuth state
-    const { stateToken, error: stateError } = await createOAuthState();
+    // Create state token in database
+    const { stateToken, error: stateError } = await createOAuthState(10);
 
     if (stateError || !stateToken) {
-      console.error('🚨 Failed to create OAuth state:', stateError);
-      showError('🚨 Failed to create OAuth state. Please try again.');
+      console.error('❌ Failed to create OAuth state:', stateError);
+      showError(`🍠 Failed to create secure state: ${stateError}`);
       return;
     }
 
-    console.log('✅ OAuth state created:', stateToken);
+    console.log('✅ State token created successfully');
 
-    // Build HubSpot OAuth URL
-    const scopes = REQUIRED_SCOPES.join(' ');
-    const authUrl = new URL('https://app.hubspotqa.com/oauth/authorize');
-    authUrl.searchParams.set('client_id', CLIENT_ID!);
-    authUrl.searchParams.set('redirect_uri', `${REDIRECT_URI}?step=finalize`);
-    authUrl.searchParams.set('scope', scopes);
-    authUrl.searchParams.set('state', stateToken);
+    const loadingMessages = [
+      "🥔 Preparing your loaded potato...",
+      "🔒 Securing your potato credentials...",
+      "🎫 Preparing authorization token...",
+      "🧀 Adding extra security cheese..."
+    ];
+    let messageIndex = 0;
 
-    console.log('🔗 Redirecting to HubSpot OAuth:', authUrl.toString());
+    setButtonText(loadingMessages[0]);
 
-    // Redirect to HubSpot
-    window.location.href = authUrl.toString();
+    const loadingInterval = setInterval(() => {
+      messageIndex = (messageIndex + 1) % loadingMessages.length;
+      setButtonText(loadingMessages[messageIndex]);
+    }, 800);
+
+    setTimeout(() => {
+      clearInterval(loadingInterval);
+
+      console.log('🎫 Authorization successful, redirecting with state:', stateToken.substring(0, 8) + '...');
+
+      const returnUrlObj = new URL(returnUrl);
+      returnUrlObj.searchParams.set('state', stateToken);
+      window.location.href = returnUrlObj.toString();
+    }, 3000);
   }
 
   async function handleLegacySubmit(): Promise<void> {
-    // For legacy flow, just do the same as authorize
-    handleAuthorizeSubmit();
+    const code = getQueryParam('code');
+
+    // If we have a code, exchange it for a token
+    if (code) {
+      console.log('🔄 Legacy flow: Found code, exchanging for token');
+      const loadingMessages = [
+        "🥔 Loading your potato...",
+        "🧀 Melting the cheese...",
+        "🧈 Adding butter...",
+        "☀️ Baking to perfection...",
+        "🚜 Serving your loaded potato..."
+      ];
+      let messageIndex = 0;
+
+      setButtonText(loadingMessages[0]);
+
+      const loadingInterval = setInterval(() => {
+        messageIndex = (messageIndex + 1) % loadingMessages.length;
+        setButtonText(loadingMessages[messageIndex]);
+      }, 800);
+
+      setTimeout(() => {
+        clearInterval(loadingInterval);
+        handleExchangeCodeForToken(code);
+      }, 2000);
+      return;
+    }
+
+    // If no code and we have returnUrl, proceed with authorize flow
+    const returnUrl = getQueryParam('returnUrl');
+    if (returnUrl) {
+      console.log('🚀 Legacy flow: No code, but have returnUrl - proceeding with authorize');
+      handleAuthorizeSubmit();
+      return;
+    }
+
+    // No code and no returnUrl - show error
+    console.log('🚨 Legacy flow: No code or returnUrl found');
+    showError('🥔 Missing parameters! Please start the installation from the HubSpot Marketplace.');
   }
 
   async function handleAuth(e: React.FormEvent): Promise<void> {
