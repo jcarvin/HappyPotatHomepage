@@ -36,7 +36,6 @@ const REQUIRED_SCOPES = [
 
 function LoadedPotatOAuthPage() {
   const { user, loading: authLoading } = useAuth();
-  const [currentStep, setCurrentStep] = useState<OAuthStep>('legacy');
   const [waitingForAuth, setWaitingForAuth] = useState(false);
   const hasProcessedAuth = useRef(false);
 
@@ -86,7 +85,6 @@ function LoadedPotatOAuthPage() {
     console.log('🥔 Initializing Loaded Potat with step:', step);
 
     const currentStepValue = step || 'legacy';
-    setCurrentStep(currentStepValue);
 
     switch (currentStepValue) {
       case 'authorize':
@@ -190,15 +188,15 @@ function LoadedPotatOAuthPage() {
     console.log('🥔 User authenticated, creating OAuth state...');
 
     // Create and store OAuth state
-    const { state, error: stateError } = await createOAuthState(user.id);
+    const { stateToken, error: stateError } = await createOAuthState();
 
-    if (stateError || !state) {
+    if (stateError || !stateToken) {
       console.error('🚨 Failed to create OAuth state:', stateError);
       showError('🚨 Failed to create OAuth state. Please try again.');
       return;
     }
 
-    console.log('✅ OAuth state created:', state);
+    console.log('✅ OAuth state created:', stateToken);
 
     // Build HubSpot OAuth URL
     const scopes = REQUIRED_SCOPES.join(' ');
@@ -206,7 +204,7 @@ function LoadedPotatOAuthPage() {
     authUrl.searchParams.set('client_id', CLIENT_ID!);
     authUrl.searchParams.set('redirect_uri', `${REDIRECT_URI}?step=finalize`);
     authUrl.searchParams.set('scope', scopes);
-    authUrl.searchParams.set('state', state);
+    authUrl.searchParams.set('state', stateToken);
 
     console.log('🔗 Redirecting to HubSpot OAuth:', authUrl.toString());
 
@@ -231,7 +229,10 @@ function LoadedPotatOAuthPage() {
         if (!username.trim()) {
           throw new Error('Username is required');
         }
-        await registerUser(email, password, username);
+        const result = await registerUser({ email, password, username });
+        if (result.error) {
+          throw new Error(result.error);
+        }
         console.log('✅ User registered successfully');
       } else {
         await loginUser(email, password);
