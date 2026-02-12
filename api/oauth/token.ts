@@ -142,7 +142,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const newRefreshToken = crypto.randomBytes(32).toString('base64url');
       const tokenExpiresAt = new Date(Date.now() + OAUTH_CONFIG.ACCESS_TOKEN_LIFETIME * 1000);
 
-      // Store token registration (simplified - no portal tracking)
+      // Store token registration WITH portal tracking
       const { error: insertError } = await supabase
         .from('mcp_user_registrations')
         .insert({
@@ -151,6 +151,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           token_expires_at: tokenExpiresAt.toISOString(),
           client_id: authCodeData.client_id,
           scopes: authCodeData.scopes,
+          hubspot_portal_id: authCodeData.hubspot_portal_id,
           last_used_at: new Date().toISOString(),
         });
 
@@ -166,7 +167,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       await supabase.from('mcp_oauth_codes').delete().eq('code', code);
 
       console.log('✅ OAuth token exchange successful:', {
-        token_expires_in: OAUTH_CONFIG.ACCESS_TOKEN_LIFETIME
+        token_expires_in: OAUTH_CONFIG.ACCESS_TOKEN_LIFETIME,
+        portal_id: authCodeData.hubspot_portal_id || 'not provided'
       });
 
       // Return tokens to HubSpot

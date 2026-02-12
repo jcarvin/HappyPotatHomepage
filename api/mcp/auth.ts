@@ -122,15 +122,24 @@ export async function validateMCPRequest(
     });
 
   // Get HubSpot API credentials from app installation
-  // Approach: Use the most recent app installation, or filter by portalId if provided
+  // Priority order:
+  // 1. Portal ID from MCP registration (stored during OAuth)
+  // 2. Portal ID from X-HubSpot-Portal-Id header
+  // 3. Most recent app installation (fallback, may be wrong if multiple portals)
+  
+  const targetPortalId = registration.hubspot_portal_id || portalIdHeader;
+  
   let query = supabase
     .from('app_tokens')
     .select('access_token, refresh_token, access_token_expires_at, user_id')
     .eq('app_name', 'loadedpotat');
 
-  // If portal ID provided in header, filter by it
-  if (portalIdHeader) {
-    query = query.eq('user_id', portalIdHeader);
+  // If we have a portal ID, use it for lookup
+  if (targetPortalId) {
+    query = query.eq('user_id', targetPortalId);
+    console.log(`🎯 Looking up HubSpot tokens for portal: ${targetPortalId}`);
+  } else {
+    console.warn('⚠️ No portal ID available - using most recent app installation (may be incorrect for multi-portal setups)');
   }
 
   const { data: appToken, error: tokenError } = await query
@@ -139,10 +148,19 @@ export async function validateMCPRequest(
     .single();
 
   if (tokenError || !appToken) {
-    console.error('HubSpot app tokens not found:', tokenError);
+    console.error('HubSpot app tokens not found:', {
+      error: tokenError,
+      target_portal: targetPortalId,
+      has_registration_portal: !!registration.hubspot_portal_id
+    });
+    
+    const errorMsg = targetPortalId 
+      ? `No HubSpot credentials found for portal ${targetPortalId}. The Loaded Potat app must be installed in this portal.`
+      : 'No HubSpot credentials found. The Loaded Potat app must be installed first.';
+    
     return {
       success: false,
-      error: 'No HubSpot credentials found. The Loaded Potat app must be installed first.'
+      error: errorMsg
     };
   }
 

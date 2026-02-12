@@ -32,6 +32,10 @@ export interface AuthorizationRequest {
   // PKCE parameters (optional but recommended for security)
   code_challenge?: string;
   code_challenge_method?: 'S256' | 'plain';
+  
+  // HubSpot portal context (may be provided in various ways)
+  portal_id?: string;
+  hubspot_portal_id?: string;
 }
 
 /**
@@ -89,6 +93,7 @@ export interface AuthCodeData {
   state?: string;
   code_challenge?: string;
   code_challenge_method?: string;
+  hubspot_portal_id?: string;
   created_at: string;
   expires_at: string;
 }
@@ -96,7 +101,7 @@ export interface AuthCodeData {
 /**
  * MCP User Registration
  * Stored in database to track OAuth tokens
- * Portal context comes from app installation, not stored here
+ * Now includes portal ID to link token to specific HubSpot portal
  */
 export interface MCPUserRegistration {
   id: string;
@@ -105,6 +110,7 @@ export interface MCPUserRegistration {
   token_expires_at: string;
   client_id: string;
   scopes: string[];
+  hubspot_portal_id?: string;
   created_at: string;
   last_used_at?: string;
 }

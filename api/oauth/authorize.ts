@@ -36,7 +36,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       state,
       code_challenge,
       code_challenge_method,
+      portal_id,
+      hubspot_portal_id,
     } = req.query as Partial<AuthorizationRequest>;
+    
+    // Extract portal ID from various possible sources
+    const portalId = portal_id || hubspot_portal_id;
 
     // Validate response_type
     if (!response_type || response_type !== 'code') {
@@ -114,6 +119,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         state: state ? (typeof state === 'string' ? state : state[0]) : null,
         code_challenge: code_challenge ? (typeof code_challenge === 'string' ? code_challenge : code_challenge[0]) : null,
         code_challenge_method: code_challenge_method ? (typeof code_challenge_method === 'string' ? code_challenge_method : code_challenge_method[0]) : null,
+        hubspot_portal_id: portalId ? (typeof portalId === 'string' ? portalId : portalId[0]) : null,
         expires_at: expiresAt.toISOString(),
       });
 
@@ -136,7 +142,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     console.log('✅ OAuth authorization successful:', {
       code_length: authCode.length,
-      expires_in: OAUTH_CONFIG.AUTH_CODE_LIFETIME
+      expires_in: OAUTH_CONFIG.AUTH_CODE_LIFETIME,
+      portal_id: portalId || 'not provided'
     });
 
     // Redirect to HubSpot callback
