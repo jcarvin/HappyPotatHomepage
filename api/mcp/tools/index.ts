@@ -5,7 +5,7 @@
  * Exports tool definitions and executors for contact and deal operations.
  */
 
-import type { MCPTool, ToolExecutor, MCPToolResult } from '../types';
+import type { MCPTool, ToolExecutor, MCPToolResult } from '../types.js';
 
 // Import contact tools
 import {
@@ -19,7 +19,7 @@ import {
   executeGetContact,
   executeSearchContacts,
   executeListContactProperties,
-} from './contacts';
+} from './contacts.js';
 
 // Import deal tools
 import {
@@ -33,7 +33,7 @@ import {
   executeGetDeal,
   executeSearchDeals,
   executeAssociateContactDeal,
-} from './deals';
+} from './deals.js';
 
 /**
  * Tool registry mapping tool names to definitions and executors

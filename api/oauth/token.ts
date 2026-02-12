@@ -14,7 +14,7 @@
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
-import { OAUTH_CONFIG, type TokenRequest, type TokenResponse } from './types';
+import { OAUTH_CONFIG, type TokenRequest, type TokenResponse } from './types.js';
 import * as crypto from 'crypto';
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;

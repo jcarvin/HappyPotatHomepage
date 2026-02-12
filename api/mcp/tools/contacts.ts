@@ -15,13 +15,13 @@ import type {
   HubSpotObjectResponse,
   HubSpotSearchResponse,
   HubSpotError,
-} from '../types';
+} from '../types.js';
 import {
   createSuccessResult,
   createErrorResult,
   formatHubSpotObject,
   formatSearchResults,
-} from '../types';
+} from '../types.js';
 
 const HUBSPOT_API_BASE = 'https://api.hubapiqa.com';
 
