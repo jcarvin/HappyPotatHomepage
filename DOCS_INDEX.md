@@ -28,6 +28,7 @@ This file helps you navigate the project documentation.
 
 ### MCP Server (Loaded Potat)
 - **[MCP_SETUP.md](MCP_SETUP.md)** - 🚀 Complete setup guide
+- **[MCP_CONSENT_PAGE_FIX.md](MCP_CONSENT_PAGE_FIX.md)** - ✅ **POPUP FIX - READ THIS!**
 - **[MCP_DEPLOY_NOW.md](MCP_DEPLOY_NOW.md)** - ⚡ Quick deployment guide for portal tracking fix
 - **[MCP_FIX_SUMMARY.md](MCP_FIX_SUMMARY.md)** - 📋 What was broken and how we fixed it
 - **[MCP_PORTAL_TRACKING_FIX.md](MCP_PORTAL_TRACKING_FIX.md)** - 📖 Detailed documentation of the portal tracking fix

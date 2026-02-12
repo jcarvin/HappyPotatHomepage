@@ -65,7 +65,7 @@ In your HubSpot marketplace app configuration:
         "authentication": {
           "type": "oauth2",
           "clientId": "loadedpotat-mcp",
-          "authorizationUrl": "https://happy-potat-homepage.vercel.app/api/oauth/authorize",
+          "authorizationUrl": "https://happy-potat-homepage.vercel.app/mcp-consent",
           "tokenUrl": "https://happy-potat-homepage.vercel.app/api/oauth/token"
         },
         "mcpServerUrl": "https://happy-potat-homepage.vercel.app/api/mcp/handler"
@@ -74,6 +74,8 @@ In your HubSpot marketplace app configuration:
   }
 }
 ```
+
+**Important:** The `authorizationUrl` should point to the **frontend consent page** (`/mcp-consent`), not the API endpoint!
 
 ## 5. Test
 
@@ -92,7 +94,13 @@ In your HubSpot marketplace app configuration:
 
 ## Endpoints
 
-- `/.well-known/oauth-authorization-server` - OAuth metadata
-- `/api/oauth/authorize` - Authorization
-- `/api/oauth/token` - Token exchange
-- `/api/mcp/handler` - MCP tools
+### Frontend Pages
+- `/mcp-consent` - User consent screen (shown in popup)
+- `/loaded-potat-oauth` - Main app installation page
+- `/loaded-potat-mcp` - MCP status and testing page
+
+### API Endpoints
+- `/api/oauth/authorize` - Authorization code generation (called by frontend)
+- `/api/oauth/token` - Token exchange (called by HubSpot)
+- `/api/mcp/handler` - MCP tool execution (called by HubSpot Breeze)
+- `/.well-known/oauth-authorization-server` - OAuth metadata discovery

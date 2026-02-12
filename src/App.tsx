@@ -12,6 +12,7 @@ import AugratinOAuthWithHsAuthPage from './pages/AugratinOAuthWithHsAuthPage';
 import InstaPotatOAuthPage from './pages/InstaPotatOAuthPage';
 import LoadedPotatOAuthPage from './pages/LoadedPotatOAuthPage';
 import LoadedPotatMCPPage from './pages/LoadedPotatMCPPage';
+import { MCPConsentPage } from './pages/MCPConsentPage';
 import HubSpotDebugPage from './pages/HubSpotDebugPage';
 import AuthCallbackTestPage from './pages/AuthCallbackTestPage';
 import { useAuth } from './hooks/useAuth';
@@ -60,6 +61,7 @@ function App() {
       <Route path="/insta-potat/no-auth" element={<InstaPotatOAuthPage />} />
       <Route path="/loaded-potat-oauth" element={<LoadedPotatOAuthPage />} />
       <Route path="/loaded-potat-mcp" element={<LoadedPotatMCPPage />} />
+      <Route path="/mcp-consent" element={<MCPConsentPage />} />
       <Route path="/debug/hubspot" element={<HubSpotDebugPage />} />
       <Route path="/auth-callback-test" element={<AuthCallbackTestPage />} />
     </Routes>
