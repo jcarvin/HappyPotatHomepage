@@ -51,20 +51,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const portalIdHeader = req.headers['x-hubspot-portal-id'] as string | undefined;
     const authResult = await validateMCPRequest(req.headers.authorization, portalIdHeader);
 
-    if (!authResult.success) {
-      console.warn('MCP authentication failed:', authResult.error);
+    if (authResult.success === false) {
+      const errorReason = authResult.error;
+      console.warn('MCP authentication failed:', errorReason);
       return res.status(401).json({
         jsonrpc: '2.0',
         error: {
           code: MCPErrorCodes.AUTH_ERROR,
           message: 'Authentication failed',
-          data: { reason: authResult.error },
+          data: { reason: errorReason },
         },
         id: null,
       } as MCPErrorResponse);
     }
 
-    const { context } = authResult;
+    const context = authResult.context;
     console.log('✅ MCP request authenticated:', {
       portal_id: context.portalId,
       has_token: !!context.hubspotAccessToken,
@@ -172,7 +173,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             status: 'ok',
             timestamp: new Date().toISOString(),
             portal_id: context.portalId,
-            user_id: context.userId,
           },
           id,
         } as MCPSuccessResponse);
