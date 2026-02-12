@@ -77,11 +77,13 @@ In your HubSpot marketplace app configuration:
 
 ## 5. Test
 
-1. Install Loaded Potat app in test portal
-2. Go to Breeze Agent Studio  
-3. Add MCP server tool
-4. Complete OAuth flow
-5. Test with prompts like "Create a contact named Test User"
+1. Visit `/loaded-potat-oauth?step=authorize` to install app
+2. Log in / sign up
+3. Authorize HubSpot OAuth
+4. Go to Breeze Agent Studio  
+5. Add MCP server tool
+6. Complete MCP OAuth flow
+7. Test with prompts like "Create a contact named Test User"
 
 ## Available Tools
 
