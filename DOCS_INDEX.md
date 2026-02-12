@@ -26,6 +26,9 @@ This file helps you navigate the project documentation.
 - **[API_SETUP.md](API_SETUP.md)** - Vercel serverless API functions
 - **[HUBSPOT_DEBUG_PLAYGROUND.md](HUBSPOT_DEBUG_PLAYGROUND.md)** - 🔍 Interactive HubSpot API testing tool
 
+### MCP Server (Loaded Potat)
+- **[MCP_SETUP.md](MCP_SETUP.md)** - 🚀 Complete setup guide
+
 ### Refresh Tokens
 - **[REFRESH_TOKEN_QUICKSTART.md](REFRESH_TOKEN_QUICKSTART.md)** - Quick start (⭐ READ THIS FIRST)
 - **[REFRESH_TOKEN_SETUP.md](REFRESH_TOKEN_SETUP.md)** - Complete technical documentation

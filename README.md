@@ -6,6 +6,7 @@ A potato-themed homepage for the fictional company "Happy Potat :)" built with R
 
 - 🥔 **Potato-themed Design**: Complete with brown gradients, potato emojis, and tuber-inspired styling
 - 🏢 **Company Sections**: Header, Hero, Services, HubSpot App integration, and Footer
+- 🤖 **MCP Server**: Production-ready MCP server for HubSpot Breeze agents (NEW!)
 - 🔧 **Review Component Testing Area**: Dedicated section for embedding and testing external HubSpot review components
 - 📱 **Responsive Design**: Works on desktop, tablet, and mobile devices
 - ⚡ **Fast Development**: Built with Vite for lightning-fast development and hot reload
