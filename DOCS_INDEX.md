@@ -31,6 +31,8 @@ This file helps you navigate the project documentation.
 - **[MCP_DEPLOY_NOW.md](MCP_DEPLOY_NOW.md)** - ⚡ Quick deployment guide for portal tracking fix
 - **[MCP_FIX_SUMMARY.md](MCP_FIX_SUMMARY.md)** - 📋 What was broken and how we fixed it
 - **[MCP_PORTAL_TRACKING_FIX.md](MCP_PORTAL_TRACKING_FIX.md)** - 📖 Detailed documentation of the portal tracking fix
+- **[MCP_OAUTH_DEBUG_GUIDE.md](MCP_OAUTH_DEBUG_GUIDE.md)** - 🔍 Debug OAuth popup/handshake issues
+- **[MCP_OAUTH_POTENTIAL_ISSUE.md](MCP_OAUTH_POTENTIAL_ISSUE.md)** - 💡 Missing consent screen analysis
 
 ### Refresh Tokens
 - **[REFRESH_TOKEN_QUICKSTART.md](REFRESH_TOKEN_QUICKSTART.md)** - Quick start (⭐ READ THIS FIRST)
