@@ -7,12 +7,12 @@ export const OAUTH_CONFIG = {
   // Client credentials
   CLIENT_ID: process.env.VITE_LOADEDPOTAT_MCP_CLIENT_ID || 'loadedpotat-mcp',
   CLIENT_SECRET: process.env.LOADEDPOTAT_MCP_CLIENT_SECRET,
-  
+
   // Token lifetimes (in seconds)
   ACCESS_TOKEN_LIFETIME: 3600, // 1 hour
   REFRESH_TOKEN_LIFETIME: 2592000, // 30 days
   AUTH_CODE_LIFETIME: 300, // 5 minutes
-  
+
   // Scopes
   AVAILABLE_SCOPES: ['crm:read', 'crm:write'] as const,
   DEFAULT_SCOPES: ['crm:read', 'crm:write'] as const,
@@ -28,11 +28,11 @@ export interface AuthorizationRequest {
   redirect_uri: string;
   scope?: string;
   state?: string;
-  
+
   // PKCE parameters (optional but recommended for security)
   code_challenge?: string;
   code_challenge_method?: 'S256' | 'plain';
-  
+
   // HubSpot portal context (may be provided in various ways)
   portal_id?: string;
   hubspot_portal_id?: string;
@@ -45,15 +45,15 @@ export interface AuthorizationRequest {
  */
 export interface TokenRequest {
   grant_type: 'authorization_code' | 'refresh_token';
-  
+
   // For authorization_code grant
   code?: string;
   redirect_uri?: string;
   code_verifier?: string; // PKCE verification
-  
+
   // For refresh_token grant
   refresh_token?: string;
-  
+
   // Client authentication
   client_id: string;
   client_secret?: string;
@@ -121,7 +121,7 @@ export interface MCPUserRegistration {
 export function validateScopes(scopeString: string): boolean {
   const requestedScopes = scopeString.split(' ');
   const availableScopes = OAUTH_CONFIG.AVAILABLE_SCOPES as readonly string[];
-  
+
   return requestedScopes.every(scope => availableScopes.includes(scope));
 }
 
