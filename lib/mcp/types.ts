@@ -3,6 +3,8 @@
  * 
  * Defines types for the MCP JSON-RPC protocol and tool schemas.
  * Based on the MCP specification for tool calling.
+ *
+ * Moved out of api/ to avoid Vercel's serverless function limit.
  */
 
 /**
@@ -94,7 +96,7 @@ export interface ContactProperties {
   company?: string;
   website?: string;
   lifecyclestage?: string;
-  [key: string]: any; // Allow custom properties
+  [key: string]: any;
 }
 
 /**
@@ -106,7 +108,7 @@ export interface DealProperties {
   dealstage: string;
   pipeline?: string;
   closedate?: string;
-  [key: string]: any; // Allow custom properties
+  [key: string]: any;
 }
 
 /**
@@ -194,7 +196,7 @@ export function formatSearchResults(
   
   const formatted = results.map((obj, index) => {
     const mainProps = Object.entries(obj.properties)
-      .slice(0, 5) // Show first 5 properties
+      .slice(0, 5)
       .map(([key, value]) => `  ${key}: ${value}`)
       .join('\n');
     
@@ -214,7 +216,6 @@ export const MCPErrorCodes = {
   INVALID_PARAMS: -32602,
   INTERNAL_ERROR: -32603,
   
-  // Custom error codes
   AUTH_ERROR: -32001,
   HUBSPOT_API_ERROR: -32002,
   VALIDATION_ERROR: -32003,

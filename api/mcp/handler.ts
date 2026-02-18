@@ -19,8 +19,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { validateMCPRequest } from './auth.js';
 import { getAllTools, executeTool } from './tools/index.js';
-import type { MCPRequest, MCPSuccessResponse, MCPErrorResponse } from './types.js';
-import { MCPErrorCodes } from './types.js';
+import type { MCPRequest, MCPSuccessResponse, MCPErrorResponse } from '../../lib/mcp/types.js';
+import { MCPErrorCodes } from '../../lib/mcp/types.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // CORS headers for cross-origin requests

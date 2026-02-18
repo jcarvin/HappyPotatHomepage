@@ -5,7 +5,7 @@
  * Exports tool definitions and executors for contact and deal operations.
  */
 
-import type { MCPTool, ToolExecutor, MCPToolResult } from '../types.js';
+import type { MCPTool, ToolExecutor, MCPToolResult } from '../../../lib/mcp/types.js';
 
 // Import contact tools
 import {
