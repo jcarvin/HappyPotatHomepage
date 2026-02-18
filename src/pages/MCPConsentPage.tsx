@@ -1,6 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
-interface ConsentPageProps {}
 
 export function MCPConsentPage() {
   const [loading, setLoading] = useState(false);
@@ -31,7 +30,7 @@ export function MCPConsentPage() {
     try {
       // Build the authorization URL with all parameters
       const authUrl = new URL('/api/oauth/authorize', window.location.origin);
-      
+
       // Copy all query parameters to the API endpoint
       params.forEach((value, key) => {
         authUrl.searchParams.set(key, value);
@@ -41,7 +40,7 @@ export function MCPConsentPage() {
 
       // Redirect to the API endpoint which will generate code and redirect to HubSpot
       window.location.href = authUrl.toString();
-      
+
     } catch (err) {
       console.error('Authorization error:', err);
       setError(err instanceof Error ? err.message : 'Authorization failed');
@@ -170,7 +169,7 @@ export function MCPConsentPage() {
             }}>
               <strong>💡 What is this?</strong>
               <br />
-              Loaded Potat MCP connects Breeze AI agents to your HubSpot CRM, 
+              Loaded Potat MCP connects Breeze AI agents to your HubSpot CRM,
               allowing them to help you manage contacts and deals through natural conversation.
             </div>
 
