@@ -1,9 +1,9 @@
 /**
  * OAuth 2.0 Authorization Endpoint
- * 
+ *
  * This is where HubSpot Unified Auth redirects users when they connect
  * your MCP server in Breeze Studio.
- * 
+ *
  * Flow:
  * 1. User clicks "Connect" in Breeze Studio
  * 2. HubSpot redirects to this endpoint with OAuth parameters
@@ -24,7 +24,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   console.log('🔵 ============================================');
   console.log('🔵 MCP OAUTH AUTHORIZE REQUEST RECEIVED');
   console.log('🔵 ============================================');
-  
+
   // Log request method
   console.log('📋 Request Method:', req.method);
   console.log('📋 Request URL:', req.url);
@@ -34,7 +34,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     referer: req.headers.referer,
     origin: req.headers.origin,
   }, null, 2));
-  
+
   // Only accept GET requests
   if (req.method !== 'GET') {
     console.error('❌ Invalid method:', req.method);
@@ -44,7 +44,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     // Log all query parameters
     console.log('📋 All Query Parameters:', JSON.stringify(req.query, null, 2));
-    
+
     // Parse OAuth authorization request parameters
     const {
       response_type,
@@ -57,10 +57,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       portal_id,
       hubspot_portal_id,
     } = req.query as Partial<AuthorizationRequest>;
-    
+
     // Extract portal ID from various possible sources
     const portalId = portal_id || hubspot_portal_id;
-    
+
     console.log('🔍 Parsed OAuth Parameters:');
     console.log('  - response_type:', response_type);
     console.log('  - client_id:', client_id);
@@ -113,11 +113,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       'hubspotqa.com',
       'localhost' // For testing
     ];
-    
+
     console.log('  Redirect URL:', redirectUrl);
     console.log('  Allowed domains:', allowedDomains);
-    
-    const isAllowedRedirect = allowedDomains.some(domain => 
+
+    const isAllowedRedirect = allowedDomains.some(domain =>
       redirectUrl.includes(domain)
     );
 
@@ -134,7 +134,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.log('✓ Validating scopes...');
     const scopeString = scope as string;
     console.log('  Requested scopes:', scopeString);
-    
+
     if (!validateScopes(scopeString)) {
       console.error('❌ Invalid scopes:', scopeString);
       return res.status(400).json({
@@ -184,7 +184,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ...insertData,
       code: insertData.code.substring(0, 10) + '...',
     }, null, 2));
-    
+
     const { error: insertError } = await supabase
       .from('mcp_oauth_codes')
       .insert(insertData);
@@ -203,10 +203,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.log('🔄 Building redirect URL...');
     const callbackUrl = new URL(redirectUrl);
     console.log('  Base redirect_uri:', redirectUrl);
-    
+
     callbackUrl.searchParams.set('code', authCode);
     console.log('  Added code parameter:', authCode.substring(0, 10) + '...');
-    
+
     if (state) {
       const stateValue = typeof state === 'string' ? state : state[0];
       callbackUrl.searchParams.set('state', stateValue);
@@ -224,7 +224,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     console.log('🚀 Redirecting to HubSpot callback (302)...');
     console.log('🔵 ============================================');
-    
+
     // Redirect to HubSpot callback
     return res.redirect(302, finalRedirectUrl);
 
@@ -237,7 +237,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.error('Error stack:', error instanceof Error ? error.stack : 'N/A');
     console.error('Full error object:', JSON.stringify(error, null, 2));
     console.error('🔵 ============================================');
-    
+
     return res.status(500).json({
       error: 'server_error',
       error_description: error instanceof Error ? error.message : 'Unknown error occurred'
