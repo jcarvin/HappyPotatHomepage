@@ -99,12 +99,9 @@ function TaterOAuthPage() {
     }
   }
 
-  function showAuthorizeForm(): void {
-    console.log('🍟 Ready for authorization step - tater login!');
-  }
+  function showAuthorizeForm(): void {}
 
   function handleLegacyFlow(): void {
-    console.log('🍟 Legacy flow: Showing login form');
     showAuthorizeForm();
   }
 
@@ -112,35 +109,23 @@ function TaterOAuthPage() {
     console.log('🍟 Finalize step: Validating state and completing installation');
 
     if (!code) {
-      console.log('🚨 Finalize Error: Missing authorization code');
       showError('🚨 Finalize Error: Missing authorization code. Your tater got lost in the fryer!');
       return;
     }
 
     if (!state) {
-      console.log('🚨 Security Error: Missing state parameter');
       showError('🚨 Security Error: Missing state parameter. Your tater might be compromised!');
       return;
     }
 
-    console.log('🔍 Validating state token from database...');
     const { userId, codeVerifier, error: stateError } = await consumeOAuthState(state);
 
     if (stateError || !userId) {
-      console.log('🚨 Security Error:', stateError || 'Invalid state token');
       showError(`🚨 Security Error: ${stateError || 'Invalid state token'}. Your tater session might be expired or compromised! 🛡️`);
       return;
     }
 
     console.log('✅ State validation successful - proceeding with installation for user:', userId);
-    console.log('🔑 [PKCE] Code verifier from database:', codeVerifier ? '✅ present' : '❌ NOT FOUND - was it saved during authorize step?');
-    console.log('🔑 [PKCE] Code verifier value (finalize):', codeVerifier ?? 'null');
-
-    if (codeVerifier) {
-      const recomputedChallenge = await generateCodeChallenge(codeVerifier);
-      console.log('🔑 [PKCE] Recomputed challenge from retrieved verifier:', recomputedChallenge);
-      console.log('🔑 [PKCE] If the above matches the challenge logged at authorize time, the data is correct and the proxy is dropping code_verifier before sending to HubSpot.');
-    }
 
     handleExchangeCodeForToken(code, userId, codeVerifier ?? undefined);
   }
@@ -150,8 +135,6 @@ function TaterOAuthPage() {
     setShowWelcome(true);
     setShowForm(false);
     setWelcomeMessage('🔄 Validating your tater credentials...');
-
-    console.log('🔑 [PKCE] Token exchange - codeVerifier:', codeVerifier ? '✅ present' : '❌ absent');
 
     try {
       const result = await exchangeCodeForToken({
@@ -209,10 +192,7 @@ function TaterOAuthPage() {
     setButtonText('🔐 Creating secure state token...');
 
     const codeVerifier = generateCodeVerifier();
-    console.log('🔑 [PKCE] Code verifier generated:', codeVerifier);
     const codeChallenge = await generateCodeChallenge(codeVerifier);
-    console.log('🔑 [PKCE] Code verifier generated (authorize):', codeVerifier);
-    console.log('🔑 [PKCE] Code challenge (S256):', codeChallenge);
 
     const { stateToken, error: stateError } = await createOAuthState(10, codeVerifier);
 
@@ -221,9 +201,8 @@ function TaterOAuthPage() {
       showError(`🍟 Failed to create secure state: ${stateError}`);
       return;
     }
-    console.log('🔑 [PKCE] Code verifier saved to database alongside state token');
 
-    console.log('✅ State token created successfully');
+    console.log('✅ State token created, redirecting to HubSpot...');
 
     const loadingMessages = [
       '🍟 Preheating the fryer...',
@@ -243,16 +222,11 @@ function TaterOAuthPage() {
     setTimeout(() => {
       clearInterval(loadingInterval);
 
-      console.log('🎫 Authorization successful, redirecting with state:', stateToken.substring(0, 8) + '...');
-
       const returnUrlObj = new URL(returnUrl);
       returnUrlObj.searchParams.set('state', stateToken);
       returnUrlObj.searchParams.set('code_challenge', codeChallenge);
       returnUrlObj.searchParams.set('code_challenge_method', 'S256');
-      const finalRedirectUrl = returnUrlObj.toString();
-      console.log('🔑 [PKCE] Full redirect URL being sent to HubSpot:', finalRedirectUrl);
-      console.log('🔑 [PKCE] code_challenge in redirect URL:', returnUrlObj.searchParams.get('code_challenge'));
-      window.location.href = finalRedirectUrl;
+      window.location.href = returnUrlObj.toString();
     }, 3000);
   }
 
@@ -286,12 +260,10 @@ function TaterOAuthPage() {
 
     const returnUrl = getQueryParam('returnUrl');
     if (returnUrl) {
-      console.log('🚀 Legacy flow: No code, but have returnUrl - proceeding with authorize');
       handleAuthorizeSubmit();
       return;
     }
 
-    console.log('🚨 Legacy flow: No code or returnUrl found');
     showError('🍟 Missing parameters! Please start the installation from the HubSpot Marketplace.');
   }
 
@@ -337,7 +309,6 @@ function TaterOAuthPage() {
           return;
         }
 
-        console.log('✅ Sign up successful! Logging in...');
         setButtonText('🔐 Logging you in...');
 
         const { user: authUser, error: loginError } = await loginUser(email, password);
@@ -350,7 +321,7 @@ function TaterOAuthPage() {
           return;
         }
 
-        console.log('✅ Login successful after signup:', authUser.email);
+        console.log('✅ Authenticated:', authUser.email);
         setWaitingForAuth(true);
         setButtonText('🌱 Authenticated! Processing...');
       } else {
@@ -370,7 +341,7 @@ function TaterOAuthPage() {
           return;
         }
 
-        console.log('✅ Supabase authentication successful for user:', authUser.email);
+        console.log('✅ Authenticated:', authUser.email);
         setWaitingForAuth(true);
         setButtonText('🌱 Authenticated! Processing...');
       }
