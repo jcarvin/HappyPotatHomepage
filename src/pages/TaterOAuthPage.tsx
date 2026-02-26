@@ -164,7 +164,7 @@ function TaterOAuthPage() {
         codeVerifier,
       });
 
-      console.log('✅ Token exchange successful:', result);
+      console.log('✅ Token exchange completed:', result);
       displaySuccessMessage(result.portalId || 'Unknown');
 
     } catch (error) {

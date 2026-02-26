@@ -1,10 +1,10 @@
 /**
  * OAuth 2.0 Token Endpoint
- * 
+ *
  * This endpoint handles two grant types:
  * 1. authorization_code - Exchange authorization code for access tokens
  * 2. refresh_token - Refresh an expired access token
- * 
+ *
  * Flow:
  * 1. HubSpot calls this endpoint with the authorization code
  * 2. We validate the code and generate access/refresh tokens
@@ -24,7 +24,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   console.log('🟢 ============================================');
   console.log('🟢 MCP OAUTH TOKEN EXCHANGE REQUEST');
   console.log('🟢 ============================================');
-  
+
   // CORS headers for cross-origin requests
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -51,7 +51,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     console.log('📋 Request Body:', JSON.stringify(req.body, null, 2));
-    
+
     const {
       grant_type,
       code,
@@ -61,7 +61,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       client_secret,
       code_verifier,
     } = req.body as TokenRequest;
-    
+
     console.log('🔍 Parsed Token Request:');
     console.log('  - grant_type:', grant_type);
     console.log('  - code:', code ? code.substring(0, 10) + '...' : 'none');
@@ -116,7 +116,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Handle authorization_code grant
     if (grant_type === 'authorization_code') {
       console.log('🔐 Processing authorization_code grant...');
-      
+
       if (!code || !redirect_uri) {
         console.error('❌ Missing required parameters for authorization_code grant');
         console.error('  code:', code ? 'present' : 'MISSING');
@@ -131,7 +131,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // Lookup authorization code in database
       console.log('💾 Looking up authorization code in database...');
       console.log('  Code:', code.substring(0, 10) + '...');
-      
+
       const { data: authCodeData, error: codeError } = await supabase
         .from('mcp_oauth_codes')
         .select('*')
@@ -159,13 +159,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.log('  Expires at:', expiresAt.toISOString());
       console.log('  Current time:', now.toISOString());
       console.log('  Is expired:', expiresAt < now);
-      
+
       if (expiresAt < now) {
         console.error('❌ Authorization code expired');
         // Delete expired code
         await supabase.from('mcp_oauth_codes').delete().eq('code', code);
         console.log('🗑️  Deleted expired code from database');
-        
+
         return res.status(400).json({
           error: 'invalid_grant',
           error_description: 'Authorization code expired'
@@ -191,7 +191,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         console.log('✓ Verifying PKCE...');
         console.log('  Challenge method:', authCodeData.code_challenge_method);
         console.log('  Challenge:', authCodeData.code_challenge.substring(0, 10) + '...');
-        
+
         if (!code_verifier) {
           console.error('❌ code_verifier missing (PKCE required)');
           return res.status(400).json({
@@ -248,7 +248,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         access_token: registrationData.access_token.substring(0, 10) + '...',
         refresh_token: registrationData.refresh_token.substring(0, 10) + '...',
       }, null, 2));
-      
+
       const { error: insertError } = await supabase
         .from('mcp_user_registrations')
         .insert(registrationData);
@@ -269,7 +269,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.log('✅ Authorization code deleted');
 
       console.log('🟢 ============================================');
-      console.log('✅ OAUTH TOKEN EXCHANGE SUCCESSFUL');
+      console.log('✅ OAUTH token exchange completed');
       console.log('  Token expires in:', OAUTH_CONFIG.ACCESS_TOKEN_LIFETIME, 'seconds');
       console.log('  Portal ID:', authCodeData.hubspot_portal_id || 'not provided');
       console.log('  Scopes:', authCodeData.scopes.join(', '));
@@ -287,7 +287,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.log('📤 Sending token response to HubSpot');
       return res.status(200).json(response);
     }
-    
+
     // Handle refresh_token grant
     else if (grant_type === 'refresh_token') {
       if (!refresh_token) {
@@ -348,7 +348,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       return res.status(200).json(response);
     }
-    
+
     // Unsupported grant type
     else {
       return res.status(400).json({
@@ -366,7 +366,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.error('Error stack:', error instanceof Error ? error.stack : 'N/A');
     console.error('Full error object:', JSON.stringify(error, null, 2));
     console.error('🟢 ============================================');
-    
+
     return res.status(500).json({
       error: 'server_error',
       error_description: error instanceof Error ? error.message : 'Unknown error occurred'

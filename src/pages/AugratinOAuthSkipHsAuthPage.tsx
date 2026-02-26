@@ -282,7 +282,7 @@ function AugratinOAuthSkipHsAuthPage() {
         return;
       }
 
-      console.log('✅ Token exchange successful!');
+      console.log('✅ token exchange completed!');
 
       // Store the portal ID
       if (result.portalId) {

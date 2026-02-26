@@ -1,9 +1,9 @@
 /**
  * Loaded Potat App Installation OAuth Page
- * 
+ *
  * This page handles the OAuth flow for installing the Loaded Potat app in HubSpot.
  * This is SEPARATE from the MCP OAuth connection that happens in Breeze Studio.
- * 
+ *
  * Flow:
  * 1. step=authorize: User authenticates with Supabase
  * 2. After auth: Redirects to HubSpot OAuth with state
@@ -42,7 +42,7 @@ function LoadedPotatOAuthPage() {
   const [showWelcome, setShowWelcome] = useState(false);
   const [welcomeMessage, setWelcomeMessage] = useState('');
   const [showForm, setShowForm] = useState(true);
-  
+
   // Update button text when auth mode changes
   useEffect(() => {
     if (!buttonDisabled) {
@@ -155,7 +155,7 @@ function LoadedPotatOAuthPage() {
         userId,
       });
 
-      console.log('✅ Token exchange successful:', result);
+      console.log('✅ token exchange completed:', result);
       displaySuccessMessage(result.portalId || 'Unknown');
 
     } catch (error) {
@@ -391,34 +391,34 @@ function LoadedPotatOAuthPage() {
           background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%) !important;
           border: 3px solid #d63031;
         }
-        
+
         .loaded-potat-title {
           color: #d63031 !important;
           text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
         }
-        
+
         .loaded-potat-page .btn {
           background: linear-gradient(135deg, #d63031 0%, #e17055 100%) !important;
           border: none;
         }
-        
+
         .loaded-potat-page .btn:hover:not(:disabled) {
           background: linear-gradient(135deg, #c0392b 0%, #d35400 100%) !important;
           transform: scale(1.02);
         }
-        
+
         .loaded-potat-page .install-info {
           background: rgba(255, 255, 255, 0.8);
           border-radius: 10px;
           padding: 15px;
           margin-top: 20px;
         }
-        
+
         .loaded-potat-page .install-info h3 {
           color: #d63031;
           margin-bottom: 10px;
         }
-        
+
         .loaded-potat-page .potato-divider {
           margin: 20px 0;
           text-align: center;

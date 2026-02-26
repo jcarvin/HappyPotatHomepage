@@ -125,7 +125,7 @@ Go to: https://vercel.com/your-project/logs
 💾 Storing token registration...
 ✅ Token registration stored
 🟢 ============================================
-✅ OAUTH TOKEN EXCHANGE SUCCESSFUL
+✅ OAUTH token exchange completed
 🟢 ============================================
 ```
 

@@ -71,7 +71,7 @@ export async function exchangeCodeForToken(options: TokenExchangeOptions): Promi
       };
     }
 
-    console.log('✅ Token exchange successful:', {
+    console.log('✅ token exchange completed:', {
       hasAccessToken: !!data.access_token,
       hasRefreshToken: !!data.refresh_token,
       expiresIn: data.expires_in

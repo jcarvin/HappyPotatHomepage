@@ -76,14 +76,14 @@ In Supabase SQL Editor, run:
 
 ```sql
 -- Add portal_id to MCP user registrations
-ALTER TABLE mcp_user_registrations 
+ALTER TABLE mcp_user_registrations
 ADD COLUMN IF NOT EXISTS hubspot_portal_id TEXT;
 
-CREATE INDEX IF NOT EXISTS idx_mcp_registrations_portal 
+CREATE INDEX IF NOT EXISTS idx_mcp_registrations_portal
 ON mcp_user_registrations(hubspot_portal_id);
 
 -- Add portal_id to oauth codes table
-ALTER TABLE mcp_oauth_codes 
+ALTER TABLE mcp_oauth_codes
 ADD COLUMN IF NOT EXISTS hubspot_portal_id TEXT;
 ```
 
@@ -118,17 +118,17 @@ Wait for Vercel deployment to complete.
 
 4. **Verify database**:
    ```sql
-   SELECT 
+   SELECT
      access_token,
      hubspot_portal_id,
      scopes,
      created_at
-   FROM mcp_user_registrations 
+   FROM mcp_user_registrations
    WHERE client_id = 'loadedpotat-mcp'
    ORDER BY created_at DESC
    LIMIT 5;
    ```
-   
+
    The `hubspot_portal_id` should be populated!
 
 5. **Test MCP tool execution**:
@@ -146,7 +146,7 @@ Check Vercel logs for these messages:
 
 **During Token Exchange:**
 ```
-✅ OAuth token exchange successful: { portal_id: '123456789', ... }
+✅ OAuth token exchange completed: { portal_id: '123456789', ... }
 ```
 
 **During MCP Tool Call:**

@@ -80,7 +80,7 @@ This is the magic function! ✨
 
 **Added logging:**
 ```typescript
-console.log('🔑 Token exchange successful:', {
+console.log('🔑 token exchange completed:', {
   hasAccessToken: !!data.access_token,
   hasRefreshToken: !!data.refresh_token,
   expiresIn: data.expires_in
