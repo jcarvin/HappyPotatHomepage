@@ -3,7 +3,7 @@
  * Each app can have its own OAuth credentials and tokens
  */
 
-export type AppName = 'potat' | 'instapotat' | 'loadedpotat' | 'potataugratin';
+export type AppName = 'potat' | 'instapotat' | 'loadedpotat' | 'potataugratin' | 'tater';
 
 export interface AppConfig {
   name: AppName;
@@ -42,6 +42,13 @@ export const APP_CONFIGS: Record<AppName, AppConfig> = {
     clientId: import.meta.env.VITE_AU_GRATIN_CLIENT_ID,
     clientSecret: import.meta.env.VITE_AU_GRATIN_CLIENT_SECRET,
     redirectUri: import.meta.env.VITE_AU_GRATIN_REDIRECT_URI
+  },
+  tater: {
+    name: 'tater',
+    displayName: 'Tater',
+    clientId: import.meta.env.VITE_TATER_CLIENT_ID,
+    clientSecret: import.meta.env.VITE_TATER_CLIENT_SECRET,
+    redirectUri: import.meta.env.VITE_TATER_REDIRECT_URI
   }
 };
 
