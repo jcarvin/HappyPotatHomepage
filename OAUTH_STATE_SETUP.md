@@ -69,8 +69,8 @@ RETURNS UUID AS $$
 DECLARE
   v_state_id UUID;
 BEGIN
-  INSERT INTO oauth_states (state_token, user_id, expires_at)
-  VALUES (p_state_token, p_user_id, NOW() + (p_expires_minutes || ' minutes')::INTERVAL)
+  INSERT INTO oauth_states (state_token, user_id, expires_at, code_verifier)
+  VALUES (p_state_token, p_user_id, NOW() + (p_expires_minutes || ' minutes')::INTERVAL, p_code_verifier)
   RETURNING id INTO v_state_id;
 
   RETURN v_state_id;
@@ -96,19 +96,19 @@ BEGIN
 
   -- State not found
   IF NOT FOUND THEN
-    RETURN QUERY SELECT NULL::UUID, FALSE, 'Invalid state token'::TEXT;
+    RETURN QUERY SELECT NULL::UUID, FALSE, 'Invalid state token'::TEXT, NULL::TEXT;
     RETURN;
   END IF;
 
   -- State already used
   IF v_state.is_used THEN
-    RETURN QUERY SELECT NULL::UUID, FALSE, 'State token already used'::TEXT;
+    RETURN QUERY SELECT NULL::UUID, FALSE, 'State token already used'::TEXT, NULL::TEXT;
     RETURN;
   END IF;
 
   -- State expired
   IF v_state.expires_at < NOW() THEN
-    RETURN QUERY SELECT NULL::UUID, FALSE, 'State token expired'::TEXT;
+    RETURN QUERY SELECT NULL::UUID, FALSE, 'State token expired'::TEXT, NULL::TEXT;
     RETURN;
   END IF;
 
@@ -118,7 +118,7 @@ BEGIN
   WHERE state_token = p_state_token;
 
   -- Return success
-  RETURN QUERY SELECT v_state.user_id, TRUE, NULL::TEXT;
+  RETURN QUERY SELECT v_state.user_id, TRUE, NULL::TEXT, v_state.code_verifier;
   RETURN;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
