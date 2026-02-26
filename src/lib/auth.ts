@@ -389,7 +389,7 @@ export async function createOAuthState(expiresMinutes: number = 10, codeVerifier
       p_state_token: stateToken,
       p_user_id: user.id,
       p_expires_minutes: expiresMinutes,
-      ...(codeVerifier ? { p_code_verifier: codeVerifier } : {})
+      p_code_verifier: codeVerifier ?? null
     });
 
     if (error) {
