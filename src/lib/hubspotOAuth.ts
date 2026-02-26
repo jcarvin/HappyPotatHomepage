@@ -37,13 +37,13 @@ export async function exchangeCodeForToken(options: TokenExchangeOptions): Promi
   console.log(`🔄 Exchanging OAuth code for tokens (app: ${appName})...`);
 
   try {
-    // Exchange code for tokens via proxy
-    const response = await fetch('https://us-central1-hubspot-oauth-proxy.cloudfunctions.net/exchange_code', {
+    const response = await fetch('https://api.hubapiqa.com/oauth/v1/token', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/x-www-form-urlencoded'
       },
-      body: JSON.stringify({
+      body: new URLSearchParams({
+        grant_type: 'authorization_code',
         code,
         client_id: clientId,
         client_secret: clientSecret,
