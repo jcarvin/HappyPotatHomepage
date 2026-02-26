@@ -346,11 +346,11 @@ export function generateStateToken(): string {
 export function generateCodeVerifier(): string {
   const array = new Uint8Array(32);
   crypto.getRandomValues(array);
-  return "IhnjJ2pMrAc-fq-ZXpqvLkQHAyPxQYJgWJvcA8fsvgxPaB8f0PIiyxnczvli72GX"
-  // return btoa(String.fromCharCode(...array))
-  //   .replace(/\+/g, '-')
-  //   .replace(/\//g, '_')
-  //   .replace(/=/g, '');
+  // return "IhnjJ2pMrAc-fq-ZXpqvLkQHAyPxQYJgWJvcA8fsvgxPaB8f0PIiyxnczvli72GX"
+  return btoa(String.fromCharCode(...array))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=/g, '');
 }
 
 /**
@@ -359,14 +359,14 @@ export function generateCodeVerifier(): string {
  */
 export async function generateCodeChallenge(verifier: string): Promise<string> {
   console.log(verifier)
-  // const encoder = new TextEncoder();
-  // const data = encoder.encode(verifier);
-  // const digest = await crypto.subtle.digest('SHA-256', data);
-return "lq4D1veJr7tMx9udhydfJb1KusQBeLrDt7Bz-70nqwQ"
-  // return btoa(String.fromCharCode(...new Uint8Array(digest)))
-  //   .replace(/\+/g, '-')
-  //   .replace(/\//g, '_')
-  //   .replace(/=/g, '');
+  const encoder = new TextEncoder();
+  const data = encoder.encode(verifier);
+  const digest = await crypto.subtle.digest('SHA-256', data);
+// return "lq4D1veJr7tMx9udhydfJb1KusQBeLrDt7Bz-70nqwQ"
+  return btoa(String.fromCharCode(...new Uint8Array(digest)))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=/g, '');
 }
 /**
  * Create OAuth state and store in database
