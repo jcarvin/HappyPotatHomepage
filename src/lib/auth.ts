@@ -358,6 +358,7 @@ export function generateCodeVerifier(): string {
  * SHA-256 hash of the verifier, base64url-encoded (no padding)
  */
 export async function generateCodeChallenge(verifier: string): Promise<string> {
+  console.log(verifier)
   // const encoder = new TextEncoder();
   // const data = encoder.encode(verifier);
   // const digest = await crypto.subtle.digest('SHA-256', data);
