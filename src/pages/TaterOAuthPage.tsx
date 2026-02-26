@@ -249,7 +249,10 @@ function TaterOAuthPage() {
       returnUrlObj.searchParams.set('state', stateToken);
       returnUrlObj.searchParams.set('code_challenge', codeChallenge);
       returnUrlObj.searchParams.set('code_challenge_method', 'S256');
-      window.location.href = returnUrlObj.toString();
+      const finalRedirectUrl = returnUrlObj.toString();
+      console.log('🔑 [PKCE] Full redirect URL being sent to HubSpot:', finalRedirectUrl);
+      console.log('🔑 [PKCE] code_challenge in redirect URL:', returnUrlObj.searchParams.get('code_challenge'));
+      window.location.href = finalRedirectUrl;
     }, 3000);
   }
 

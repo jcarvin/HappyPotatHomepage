@@ -365,7 +365,6 @@ export async function generateCodeChallenge(verifier: string): Promise<string> {
     .replace(/\//g, '_')
     .replace(/=/g, '');
 }
-
 /**
  * Create OAuth state and store in database
  * This must be called when user is authenticated
@@ -589,7 +588,7 @@ export async function getAppToken(
 ): Promise<{ token: string | null; refreshToken: string | null; expiresAt: string | null; error: string | null }> {
   try {
     const { data: { user } } = await supabase.auth.getUser();
-    
+
     if (!user) {
       return { token: null, refreshToken: null, expiresAt: null, error: 'Not authenticated' };
     }
@@ -624,7 +623,7 @@ export async function getAppToken(
 export async function getInstalledApps(): Promise<{ apps: AppName[]; error: string | null }> {
   try {
     const { data: { user } } = await supabase.auth.getUser();
-    
+
     if (!user) {
       return { apps: [], error: 'Not authenticated' };
     }
