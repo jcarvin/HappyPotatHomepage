@@ -62,7 +62,8 @@ GRANT SELECT, INSERT, UPDATE ON oauth_states TO anon;
 CREATE OR REPLACE FUNCTION create_oauth_state(
   p_state_token TEXT,
   p_user_id UUID,
-  p_expires_minutes INTEGER DEFAULT 10
+  p_expires_minutes INTEGER DEFAULT 10,
+  p_code_verifier TEXT DEFAULT NULL
 )
 RETURNS UUID AS $$
 DECLARE
@@ -81,7 +82,8 @@ CREATE OR REPLACE FUNCTION consume_oauth_state(p_state_token TEXT)
 RETURNS TABLE (
   user_id UUID,
   is_valid BOOLEAN,
-  error_message TEXT
+  error_message TEXT,
+  code_verifier TEXT
 ) AS $$
 DECLARE
   v_state RECORD;

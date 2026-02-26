@@ -369,8 +369,9 @@ export async function generateCodeChallenge(verifier: string): Promise<string> {
 /**
  * Create OAuth state and store in database
  * This must be called when user is authenticated
+ * Pass codeVerifier to store a PKCE verifier alongside the state (Tater app only)
  */
-export async function createOAuthState(expiresMinutes: number = 10): Promise<{ stateToken: string | null; error: string | null }> {
+export async function createOAuthState(expiresMinutes: number = 10, codeVerifier?: string): Promise<{ stateToken: string | null; error: string | null }> {
   try {
     const { data: { user } } = await supabase.auth.getUser();
 
@@ -385,7 +386,8 @@ export async function createOAuthState(expiresMinutes: number = 10): Promise<{ s
     const { data, error } = await supabase.rpc('create_oauth_state', {
       p_state_token: stateToken,
       p_user_id: user.id,
-      p_expires_minutes: expiresMinutes
+      p_expires_minutes: expiresMinutes,
+      ...(codeVerifier ? { p_code_verifier: codeVerifier } : {})
     });
 
     if (error) {
@@ -402,10 +404,10 @@ export async function createOAuthState(expiresMinutes: number = 10): Promise<{ s
 }
 
 /**
- * Consume OAuth state and get associated user ID
+ * Consume OAuth state and get associated user ID (and optional PKCE code verifier)
  * This can be called WITHOUT authentication (in OAuth callback)
  */
-export async function consumeOAuthState(stateToken: string): Promise<{ userId: string | null; error: string | null }> {
+export async function consumeOAuthState(stateToken: string): Promise<{ userId: string | null; codeVerifier: string | null; error: string | null }> {
   try {
     console.log('🔍 Consuming OAuth state:', stateToken.substring(0, 8) + '...');
 
@@ -416,27 +418,27 @@ export async function consumeOAuthState(stateToken: string): Promise<{ userId: s
 
     if (error) {
       console.error('❌ Failed to consume OAuth state:', error);
-      return { userId: null, error: error.message };
+      return { userId: null, codeVerifier: null, error: error.message };
     }
 
-    // The function returns a single row with user_id, is_valid, error_message
+    // The function returns a single row with user_id, is_valid, error_message, code_verifier
     const result = Array.isArray(data) ? data[0] : data;
 
     if (!result) {
       console.error('❌ No result from consume_oauth_state');
-      return { userId: null, error: 'Invalid state token' };
+      return { userId: null, codeVerifier: null, error: 'Invalid state token' };
     }
 
     if (!result.is_valid) {
       console.error('❌ State validation failed:', result.error_message);
-      return { userId: null, error: result.error_message || 'Invalid state token' };
+      return { userId: null, codeVerifier: null, error: result.error_message || 'Invalid state token' };
     }
 
     console.log('✅ OAuth state consumed successfully for user:', result.user_id);
-    return { userId: result.user_id, error: null };
+    return { userId: result.user_id, codeVerifier: result.code_verifier ?? null, error: null };
   } catch (err) {
     console.error('❌ Unexpected error consuming OAuth state:', err);
-    return { userId: null, error: err instanceof Error ? err.message : 'Failed to consume state' };
+    return { userId: null, codeVerifier: null, error: err instanceof Error ? err.message : 'Failed to consume state' };
   }
 }
 

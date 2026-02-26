@@ -124,7 +124,7 @@ function TaterOAuthPage() {
     }
 
     console.log('🔍 Validating state token from database...');
-    const { userId, error: stateError } = await consumeOAuthState(state);
+    const { userId, codeVerifier, error: stateError } = await consumeOAuthState(state);
 
     if (stateError || !userId) {
       console.log('🚨 Security Error:', stateError || 'Invalid state token');
@@ -133,21 +133,18 @@ function TaterOAuthPage() {
     }
 
     console.log('✅ State validation successful - proceeding with installation for user:', userId);
+    console.log('🔑 [PKCE] Code verifier from database:', codeVerifier ? '✅ present' : '❌ NOT FOUND - was it saved during authorize step?');
 
-    handleExchangeCodeForToken(code, userId);
+    handleExchangeCodeForToken(code, userId, codeVerifier ?? undefined);
   }
 
-  async function handleExchangeCodeForToken(code: string, userId?: string): Promise<void> {
+  async function handleExchangeCodeForToken(code: string, userId?: string, codeVerifier?: string): Promise<void> {
     setButtonText('🔄 Validating your tater credentials...');
     setShowWelcome(true);
     setShowForm(false);
     setWelcomeMessage('🔄 Validating your tater credentials...');
 
-    const codeVerifier = sessionStorage.getItem('tater_pkce_verifier') ?? undefined;
-    console.log('🔑 [PKCE] Finalize step - reading verifier from sessionStorage:', codeVerifier !== undefined ? '✅ found' : '❌ NOT FOUND - likely iframe/cross-origin issue');
-    console.log('🔑 [PKCE] sessionStorage origin:', window.location.origin);
-    console.log('🔑 [PKCE] Running in iframe:', window !== window.top ? '⚠️ YES - this is likely why verifier is missing' : 'no');
-    console.log('🔑 [PKCE] Will proceed with codeVerifier:', codeVerifier !== undefined ? 'present' : 'absent (token exchange may fail without it)');
+    console.log('🔑 [PKCE] Token exchange - codeVerifier:', codeVerifier ? '✅ present' : '❌ absent');
 
     try {
       const result = await exchangeCodeForToken({
@@ -160,13 +157,10 @@ function TaterOAuthPage() {
         codeVerifier,
       });
 
-      sessionStorage.removeItem('tater_pkce_verifier');
-
       console.log('✅ Token exchange successful:', result);
       displaySuccessMessage(result.portalId || 'Unknown');
 
     } catch (error) {
-      sessionStorage.removeItem('tater_pkce_verifier');
       console.error('❌ Token exchange failed:', error);
       showError(`🚨 Installation Error: ${error instanceof Error ? error.message : 'Failed to exchange token'}`);
     }
@@ -209,22 +203,17 @@ function TaterOAuthPage() {
 
     const codeVerifier = generateCodeVerifier();
     const codeChallenge = await generateCodeChallenge(codeVerifier);
-    sessionStorage.setItem('tater_pkce_verifier', codeVerifier);
-    const storedVerifier = sessionStorage.getItem('tater_pkce_verifier');
     console.log('🔑 [PKCE] Code verifier generated. Length:', codeVerifier.length);
     console.log('🔑 [PKCE] Code challenge (S256):', codeChallenge);
-    console.log('🔑 [PKCE] Verifier stored in sessionStorage:', storedVerifier !== null ? '✅ confirmed' : '❌ FAILED to store');
-    console.log('🔑 [PKCE] sessionStorage origin:', window.location.origin);
-    console.log('🔑 [PKCE] Running in iframe:', window !== window.top ? '⚠️ YES - sessionStorage may not persist across redirect' : 'no');
 
-    const { stateToken, error: stateError } = await createOAuthState(10);
+    const { stateToken, error: stateError } = await createOAuthState(10, codeVerifier);
 
     if (stateError || !stateToken) {
       console.error('❌ Failed to create OAuth state:', stateError);
-      sessionStorage.removeItem('tater_pkce_verifier');
       showError(`🍟 Failed to create secure state: ${stateError}`);
       return;
     }
+    console.log('🔑 [PKCE] Code verifier saved to database alongside state token');
 
     console.log('✅ State token created successfully');
 
