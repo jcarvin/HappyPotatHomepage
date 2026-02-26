@@ -340,6 +340,33 @@ export function generateStateToken(): string {
 }
 
 /**
+ * Generate a PKCE code verifier
+ * 32 random bytes, base64url-encoded (no padding), producing a 43-char string
+ */
+export function generateCodeVerifier(): string {
+  const array = new Uint8Array(32);
+  crypto.getRandomValues(array);
+  return btoa(String.fromCharCode(...array))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=/g, '');
+}
+
+/**
+ * Generate a PKCE code challenge from a code verifier
+ * SHA-256 hash of the verifier, base64url-encoded (no padding)
+ */
+export async function generateCodeChallenge(verifier: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(verifier);
+  const digest = await crypto.subtle.digest('SHA-256', data);
+  return btoa(String.fromCharCode(...new Uint8Array(digest)))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=/g, '');
+}
+
+/**
  * Create OAuth state and store in database
  * This must be called when user is authenticated
  */

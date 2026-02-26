@@ -8,6 +8,7 @@ export interface TokenExchangeOptions {
   clientSecret: string;
   redirectUri: string;
   userId?: string; // Optional: if provided, saves to specific user without requiring auth session
+  codeVerifier?: string; // Optional: PKCE code verifier
 }
 
 export interface TokenExchangeResult {
@@ -31,7 +32,7 @@ export interface AccountInfo {
  * Exchange OAuth authorization code for access and refresh tokens
  */
 export async function exchangeCodeForToken(options: TokenExchangeOptions): Promise<TokenExchangeResult> {
-  const { code, appName, clientId, clientSecret, redirectUri, userId } = options;
+  const { code, appName, clientId, clientSecret, redirectUri, userId, codeVerifier } = options;
 
   console.log(`🔄 Exchanging OAuth code for tokens (app: ${appName})...`);
 
@@ -46,7 +47,8 @@ export async function exchangeCodeForToken(options: TokenExchangeOptions): Promi
         code,
         client_id: clientId,
         client_secret: clientSecret,
-        redirect_uri: redirectUri
+        redirect_uri: redirectUri,
+        ...(codeVerifier ? { code_verifier: codeVerifier } : {})
       })
     });
 
