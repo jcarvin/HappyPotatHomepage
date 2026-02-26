@@ -134,6 +134,13 @@ function TaterOAuthPage() {
 
     console.log('✅ State validation successful - proceeding with installation for user:', userId);
     console.log('🔑 [PKCE] Code verifier from database:', codeVerifier ? '✅ present' : '❌ NOT FOUND - was it saved during authorize step?');
+    console.log('🔑 [PKCE] Code verifier value (finalize):', codeVerifier ?? 'null');
+
+    if (codeVerifier) {
+      const recomputedChallenge = await generateCodeChallenge(codeVerifier);
+      console.log('🔑 [PKCE] Recomputed challenge from retrieved verifier:', recomputedChallenge);
+      console.log('🔑 [PKCE] If the above matches the challenge logged at authorize time, the data is correct and the proxy is dropping code_verifier before sending to HubSpot.');
+    }
 
     handleExchangeCodeForToken(code, userId, codeVerifier ?? undefined);
   }
@@ -202,8 +209,9 @@ function TaterOAuthPage() {
     setButtonText('🔐 Creating secure state token...');
 
     const codeVerifier = generateCodeVerifier();
+    console.log('🔑 [PKCE] Code verifier generated:', codeVerifier);
     const codeChallenge = await generateCodeChallenge(codeVerifier);
-    console.log('🔑 [PKCE] Code verifier generated. Length:', codeVerifier.length);
+    console.log('🔑 [PKCE] Code verifier generated (authorize):', codeVerifier);
     console.log('🔑 [PKCE] Code challenge (S256):', codeChallenge);
 
     const { stateToken, error: stateError } = await createOAuthState(10, codeVerifier);
