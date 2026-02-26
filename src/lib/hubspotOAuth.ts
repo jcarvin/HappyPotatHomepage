@@ -38,12 +38,7 @@ export async function exchangeCodeForToken(options: TokenExchangeOptions): Promi
 
   try {
     // Exchange code for tokens via proxy
-    const proxyUrl = new URL('https://us-central1-hubspot-oauth-proxy.cloudfunctions.net/exchange_code');
-    if (codeVerifier) {
-      proxyUrl.searchParams.set('code_verifier', codeVerifier);
-    }
-
-    const response = await fetch(proxyUrl.toString(), {
+    const response = await fetch('https://us-central1-hubspot-oauth-proxy.cloudfunctions.net/exchange_code', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -53,6 +48,7 @@ export async function exchangeCodeForToken(options: TokenExchangeOptions): Promi
         client_id: clientId,
         client_secret: clientSecret,
         redirect_uri: redirectUri,
+        ...(codeVerifier ? { code_verifier: codeVerifier } : {})
       })
     });
 
