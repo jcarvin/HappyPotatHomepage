@@ -78,6 +78,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const context = authResult.context;
     console.log('✅ MCP request authenticated:', {
+      registration_id: context.registrationId,
       portal_id: context.portalId,
       has_token: !!context.hubspotAccessToken,
     });

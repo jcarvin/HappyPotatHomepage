@@ -28,6 +28,7 @@ export interface MCPAuthContext {
   hubspotAccessToken: string;
   mcpScopes: string[];
   portalId?: string; // Optional: if we can extract from app installation
+  registrationId: string; // mcp_user_registrations.id — identifies the connected user
 }
 
 /**
@@ -228,6 +229,7 @@ export async function validateMCPRequest(
       hubspotAccessToken,
       mcpScopes: registration.scopes,
       portalId: appToken.user_id, // Portal ID from app installation
+      registrationId: registration.id,
     },
   };
 }
