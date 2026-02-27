@@ -23,6 +23,17 @@ import type { MCPRequest, MCPSuccessResponse, MCPErrorResponse } from '../../lib
 import { MCPErrorCodes } from '../../lib/mcp/types.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // Log all incoming request data to help identify what Breeze is sending us
+  console.log('🟣 ============================================');
+  console.log('🟣 MCP HANDLER REQUEST');
+  console.log('🟣 ============================================');
+  console.log('📋 Method:', req.method);
+  console.log('📋 URL:', req.url);
+  console.log('📋 Query:', JSON.stringify(req.query, null, 2));
+  console.log('📋 Headers:', JSON.stringify(req.headers, null, 2));
+  console.log('📋 Body:', JSON.stringify(req.body, null, 2));
+  console.log('🟣 ============================================');
+
   // CORS headers for cross-origin requests
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -115,7 +126,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           id,
         } as MCPSuccessResponse);
 
-      case 'tools/list':
+      case 'tools/list': {
         // Return all available tools
         const tools = getAllTools();
         console.log(`📋 Returning ${tools.length} available tools`);
@@ -125,8 +136,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           result: { tools },
           id,
         } as MCPSuccessResponse);
+      }
 
-      case 'tools/call':
+      case 'tools/call': {
         // Execute a specific tool
         if (!params || !params.name) {
           return res.status(400).json({
@@ -190,6 +202,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             id,
           } as MCPErrorResponse);
         }
+      }
 
       case 'ping':
         // Health check endpoint
