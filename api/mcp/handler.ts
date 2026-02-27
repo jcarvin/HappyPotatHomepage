@@ -23,17 +23,6 @@ import type { MCPRequest, MCPSuccessResponse, MCPErrorResponse } from '../../lib
 import { MCPErrorCodes } from '../../lib/mcp/types.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // Log all incoming request data to help identify what Breeze is sending us
-  console.log('🟣 ============================================');
-  console.log('🟣 MCP HANDLER REQUEST');
-  console.log('🟣 ============================================');
-  console.log('📋 Method:', req.method);
-  console.log('📋 URL:', req.url);
-  console.log('📋 Query:', JSON.stringify(req.query, null, 2));
-  console.log('📋 Headers:', JSON.stringify(req.headers, null, 2));
-  console.log('📋 Body:', JSON.stringify(req.body, null, 2));
-  console.log('🟣 ============================================');
-
   // CORS headers for cross-origin requests
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -49,7 +38,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // return a valid SSE response that closes immediately. Breeze should fall
   // back to POST for actual JSON-RPC requests.
   if (req.method === 'GET') {
-    console.log('📡 SSE GET request received - returning empty SSE stream');
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
@@ -89,11 +77,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const context = authResult.context;
-    console.log('✅ MCP request authenticated:', {
-      registration_id: context.registrationId,
-      portal_id: context.portalId,
-      has_token: !!context.hubspotAccessToken,
-    });
 
     // Parse JSON-RPC request
     const { jsonrpc, method, params, id } = req.body as MCPRequest;
@@ -114,7 +97,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     switch (method) {
       case 'initialize':
         // MCP protocol handshake - client sends capabilities, server responds with its own
-        console.log('🤝 MCP initialize handshake');
         return res.status(200).json({
           jsonrpc: '2.0',
           result: {
@@ -133,7 +115,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       case 'initialized':
       case 'notifications/initialized':
         // Client notification acknowledging the handshake - no meaningful response body needed
-        console.log('✅ MCP initialized notification received');
         return res.status(200).json({
           jsonrpc: '2.0',
           result: null,
@@ -143,8 +124,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       case 'tools/list': {
         // Return all available tools
         const tools = getAllTools();
-        console.log(`📋 Returning ${tools.length} available tools`);
-        
         return res.status(200).json({
           jsonrpc: '2.0',
           result: { tools },
@@ -168,11 +147,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const toolName = params.name;
         const toolArgs = params.arguments || {};
 
-        console.log(`🔧 Executing tool: ${toolName}`, {
-          portal_id: context.portalId,
-          args: Object.keys(toolArgs),
-        });
-
         try {
           const result = await executeTool(
             toolName,
@@ -182,7 +156,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
           // Check if tool execution resulted in error
           if (result.isError) {
-            console.warn(`⚠️ Tool execution error: ${toolName}`);
             return res.status(200).json({
               jsonrpc: '2.0',
               error: {
@@ -194,7 +167,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             } as MCPErrorResponse);
           }
 
-          console.log(`✅ Tool executed successfully: ${toolName}`);
           return res.status(200).json({
             jsonrpc: '2.0',
             result,
@@ -220,7 +192,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       case 'ping':
         // Health check endpoint
-        console.log('🏓 Ping received');
         return res.status(200).json({
           jsonrpc: '2.0',
           result: {
@@ -233,7 +204,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       default:
         // Unknown method
-        console.warn(`❓ Unknown method requested: ${method}`);
         return res.status(400).json({
           jsonrpc: '2.0',
           error: {

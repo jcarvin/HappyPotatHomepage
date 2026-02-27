@@ -114,7 +114,6 @@ const TIER_CONFIGS: Record<Tier, TierConfig> = {
 function AugratinOAuthSkipHsAuthPage() {
   const { user, loading: authLoading } = useAuth();
   const [step, setStep] = useState<Step>('auth');
-  // const [selectedTier, setSelectedTier] = useState<Tier | null>(null);
 
   // Auth form state
   const [authMode, setAuthMode] = useState<AuthMode>('login');
@@ -133,20 +132,9 @@ function AugratinOAuthSkipHsAuthPage() {
     const params = new URLSearchParams(window.location.search);
     const authComplete = params.get('authComplete');
     const code = params.get('code');
-    const step = params.get('step');
-
-    console.log('🧀 Au Gratin OAuth initialized', {
-      authComplete,
-      hasCode: !!code,
-      stepParam: step,
-      user: !!user,
-      authLoading,
-      isPopup: !!window.opener
-    });
 
     // If there's a code but no authComplete, it's from old OAuth flow - ignore it
     if (code && !authComplete) {
-      console.log('⚠️ Warning: Found code parameter without authComplete - ignoring (old OAuth flow)');
       // Clean up the URL
       const newUrl = new URL(window.location.href);
       newUrl.searchParams.delete('code');
@@ -156,23 +144,16 @@ function AugratinOAuthSkipHsAuthPage() {
     }
 
     if (authComplete === 'true' && code) {
-      console.log('🎉 OAuth callback detected - auth complete!');
-
-      // Store the OAuth code
       setOauthCode(code);
 
-      // If we're in a popup, notify the parent window and close
       if (window.opener && !window.opener.closed) {
-        console.log('📤 Notifying parent window from popup');
         window.opener.postMessage({
           type: 'oauth_complete',
           code,
           params: window.location.search
         }, window.location.origin);
 
-        // Give the parent a moment to receive the message, then close
         setTimeout(() => {
-          console.log('🔒 Closing OAuth popup');
           window.close();
         }, 500);
       } else {
@@ -188,22 +169,14 @@ function AugratinOAuthSkipHsAuthPage() {
     const params = new URLSearchParams(window.location.search);
     const authComplete = params.get('authComplete');
 
-    // Don't auto-progress if we're coming back from OAuth
     if (authComplete === 'true') {
-      console.log('🔒 Skipping auto-progress - OAuth callback in progress');
       return;
     }
 
     if (user && !authLoading && step === 'auth') {
-      console.log('✅ User authenticated, moving to tier selection');
       setStep('tierSelection');
     }
   }, [user, authLoading, step]);
-
-  // Log step changes for debugging
-  useEffect(() => {
-    console.log('📍 Current step:', step);
-  }, [step]);
 
   // Listen for messages from OAuth popup
   useEffect(() => {
@@ -214,9 +187,6 @@ function AugratinOAuthSkipHsAuthPage() {
       }
 
       if (event.data.type === 'oauth_complete') {
-        console.log('📥 Received OAuth completion from popup', event.data);
-
-        // Store the OAuth code
         setOauthCode(event.data.code);
 
         // Update the URL with the OAuth callback parameters
@@ -243,26 +213,16 @@ function AugratinOAuthSkipHsAuthPage() {
 
   async function handleTokenExchange(code: string): Promise<void> {
     if (exchangingToken) {
-      console.log('⚠️ Token exchange already in progress');
       return;
     }
 
     if (!user) {
-      console.error('❌ No authenticated user for token exchange');
       setAuthError('🧀 Please log in first before completing OAuth');
       return;
     }
 
     setExchangingToken(true);
     setStep('authorizing');
-
-    console.log('🔄 Starting token exchange for code:', code.substring(0, 10) + '...');
-
-    // Build the redirect URI (same as what was used for OAuth)
-    // const currentUrl = new URL(window.location.href);
-    // const cleanUrl = new URL(`${currentUrl.origin}${currentUrl.pathname}`);
-    // cleanUrl.searchParams.set('authComplete', 'true');
-    // const redirectUri = cleanUrl.toString();
 
     try {
       const result = await exchangeCodeForToken({
@@ -275,16 +235,12 @@ function AugratinOAuthSkipHsAuthPage() {
       });
 
       if (!result.success) {
-        console.error('❌ Token exchange failed:', result.error);
         setAuthError(`🧀 Failed to complete installation: ${result.error}`);
         setStep('tierSelection');
         setExchangingToken(false);
         return;
       }
 
-      console.log('✅ token exchange completed!');
-
-      // Store the portal ID
       if (result.portalId) {
         setPortalId(result.portalId);
       }
@@ -383,7 +339,6 @@ function AugratinOAuthSkipHsAuthPage() {
   }
 
   function handleTierSelect(tier: Tier): void {
-    // setSelectedTier(tier);
     setStep('authorizing');
 
     // Build OAuth URL
@@ -404,11 +359,6 @@ function AugratinOAuthSkipHsAuthPage() {
       authUrl += `&optional_scopes=${optionalScopeString}`;
     }
 
-    console.log('🚀 Opening OAuth popup for tier', tier);
-    console.log('📋 Scopes:', tierConfig.scopes.length, 'required/conditional scopes');
-    console.log('📋 Optional Scopes:', tierConfig.optionalScopes.length, 'optional scopes');
-
-    // Open OAuth in popup instead of redirecting
     const popup = window.open(
       authUrl,
       'hubspot-oauth',
@@ -421,22 +371,17 @@ function AugratinOAuthSkipHsAuthPage() {
       return;
     }
 
-    // Listen for popup to complete
     const checkPopupClosed = setInterval(() => {
       if (popup.closed) {
         clearInterval(checkPopupClosed);
-        console.log('🔔 OAuth popup was closed');
 
-        // Check if we should be on success screen
         const params = new URLSearchParams(window.location.search);
         const authComplete = params.get('authComplete');
         const code = params.get('code');
 
         if (authComplete === 'true' && code) {
-          console.log('✅ OAuth completed successfully!');
           setStep('success');
         } else {
-          console.log('❌ OAuth was cancelled or failed');
           setStep('tierSelection');
         }
       }

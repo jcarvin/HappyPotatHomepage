@@ -36,9 +36,6 @@ export function MCPConsentPage() {
         authUrl.searchParams.set(key, value);
       });
 
-      console.log('🚀 Redirecting to authorize endpoint:', authUrl.toString());
-
-      // Redirect to the API endpoint which will generate code and redirect to HubSpot
       window.location.href = authUrl.toString();
 
     } catch (err) {

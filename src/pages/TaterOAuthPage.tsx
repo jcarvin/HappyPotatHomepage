@@ -79,8 +79,6 @@ function TaterOAuthPage() {
     const code = getQueryParam('code');
     const state = getQueryParam('state');
 
-    console.log('🍟 Initializing Tater with step:', step);
-
     const currentStepValue = step || 'legacy';
 
     switch (currentStepValue) {
@@ -106,8 +104,6 @@ function TaterOAuthPage() {
   }
 
   async function handleFinalizeStep(code: string | null, state: string | null): Promise<void> {
-    console.log('🍟 Finalize step: Validating state and completing installation');
-
     if (!code) {
       showError('🚨 Finalize Error: Missing authorization code. Your tater got lost in the fryer!');
       return;
@@ -124,8 +120,6 @@ function TaterOAuthPage() {
       showError(`🚨 Security Error: ${stateError || 'Invalid state token'}. Your tater session might be expired or compromised! 🛡️`);
       return;
     }
-
-    console.log('✅ State validation successful - proceeding with installation for user:', userId);
 
     handleExchangeCodeForToken(code, userId, codeVerifier ?? undefined);
   }
@@ -147,11 +141,10 @@ function TaterOAuthPage() {
         codeVerifier,
       });
 
-      console.log('✅ Token exchange completed:', result);
       displaySuccessMessage(result.portalId || 'Unknown');
 
     } catch (error) {
-      console.error('❌ Token exchange failed:', error);
+      console.error('Token exchange failed:', error);
       showError(`🚨 Installation Error: ${error instanceof Error ? error.message : 'Failed to exchange token'}`);
     }
   }
@@ -197,12 +190,9 @@ function TaterOAuthPage() {
     const { stateToken, error: stateError } = await createOAuthState(10, codeVerifier);
 
     if (stateError || !stateToken) {
-      console.error('❌ Failed to create OAuth state:', stateError);
       showError(`🍟 Failed to create secure state: ${stateError}`);
       return;
     }
-
-    console.log('✅ State token created, redirecting to HubSpot...');
 
     const loadingMessages = [
       '🍟 Preheating the fryer...',
@@ -234,7 +224,6 @@ function TaterOAuthPage() {
     const code = getQueryParam('code');
 
     if (code) {
-      console.log('🔄 Legacy flow: Found code, exchanging for token');
       const loadingMessages = [
         '🍟 Dropping taters in the fryer...',
         '🔥 Getting crispy...',
@@ -321,7 +310,6 @@ function TaterOAuthPage() {
           return;
         }
 
-        console.log('✅ Authenticated:', authUser.email);
         setWaitingForAuth(true);
         setButtonText('🌱 Authenticated! Processing...');
       } else {
@@ -341,7 +329,6 @@ function TaterOAuthPage() {
           return;
         }
 
-        console.log('✅ Authenticated:', authUser.email);
         setWaitingForAuth(true);
         setButtonText('🌱 Authenticated! Processing...');
       }

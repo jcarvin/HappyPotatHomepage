@@ -89,21 +89,11 @@ export default async function handler(
       diagnostics.push(`⏰ Now: ${new Date(now).toISOString()}`);
     }
 
-    console.log(`🔍 Token expiry check for ${appName}:`, {
-      appName,
-      hasExpiryDate: !!appToken.access_token_expires_at,
-      hasRefreshToken: !!appToken.refresh_token,
-      expiresAt: appToken.access_token_expires_at,
-      now: new Date(now).toISOString(),
-      fiveMinutesFromNow: fiveMinutesFromNow.toISOString()
-    });
-
     if (appToken.access_token_expires_at) {
       const expiresAt = new Date(appToken.access_token_expires_at);
 
       if (expiresAt <= fiveMinutesFromNow) {
         diagnostics.push(`⚠️ ${appName} token is expired or expiring soon!`);
-        console.log(`⚠️ ${appName} token is expired or expiring soon!`);
 
         if (!appToken.refresh_token) {
           diagnostics.push(`❌ No refresh token available for ${appName}. User needs to re-authenticate.`);
@@ -116,9 +106,7 @@ export default async function handler(
           });
         }
 
-        // Token is expired or expiring soon, refresh it
         diagnostics.push(`🔄 Attempting to refresh ${appName} access token...`);
-        console.log(`🔄 Attempting to refresh ${appName} access token...`);
 
         try {
           const refreshResponse = await fetch(`${req.headers.origin || 'https://happy-potat-homepage.vercel.app'}/api/refresh-hubspot-token`, {
@@ -168,7 +156,6 @@ export default async function handler(
             // Continue anyway with the new token
           }
 
-          console.log(`✅ ${appName} access token refreshed successfully! New expiry:`, newExpiresAt);
         } catch (refreshError) {
           diagnostics.push(`❌ Error during ${appName} refresh: ${refreshError instanceof Error ? refreshError.message : 'Unknown error'}`);
           console.error(`❌ Error during ${appName} token refresh:`, refreshError);
@@ -181,11 +168,9 @@ export default async function handler(
         }
       } else {
         diagnostics.push(`✅ ${appName} access token is still valid`);
-        console.log(`✅ ${appName} access token is still valid`);
       }
     } else {
       diagnostics.push(`⚠️ No expiry date stored for ${appName} - cannot determine if token needs refresh`);
-      console.log(`⚠️ No expiry date stored for ${appName} - cannot determine if token needs refresh`);
     }
 
     // Make the request to HubSpot API

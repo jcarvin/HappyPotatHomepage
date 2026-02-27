@@ -72,10 +72,5 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     mcp_capabilities: ['contacts', 'deals'],
   };
 
-  console.log('OAuth metadata endpoint called', {
-    from: req.headers['user-agent'],
-    referer: req.headers.referer,
-  });
-
   return res.status(200).json(metadata);
 }

@@ -66,22 +66,15 @@ function InstaPotatOAuthPage() {
     const code = getQueryParam('code');
     const returnUrl = getQueryParam('returnUrl');
 
-    console.log('🥔 InstaPotat: Starting no-auth installation');
-    console.log('📝 Code:', code ? 'present' : 'missing');
-    console.log('🔗 ReturnUrl:', returnUrl);
-
-    // Validate required parameters
     if (!code) {
       setStatusMessage('🚨 Missing authorization code. Installation failed.');
       setIsProcessing(false);
-      console.error('❌ No authorization code provided');
       return;
     }
 
     if (!returnUrl) {
       setStatusMessage('🚨 Missing return URL. Installation failed.');
       setIsProcessing(false);
-      console.error('❌ No return URL provided');
       return;
     }
 
@@ -108,9 +101,6 @@ function InstaPotatOAuthPage() {
         throw new Error('No access token received from HubSpot');
       }
 
-      console.log('✅ Successfully received access token');
-
-      // Step 2: Get account info
       setStatusMessage('📋 Fetching account information...');
       const accountData = await fetchAccountInfo(data.access_token);
 
@@ -118,21 +108,12 @@ function InstaPotatOAuthPage() {
         throw new Error('No portal ID found in account data');
       }
 
-      console.log('✅ Portal ID:', accountData.portalId);
-
-      // Step 3: Store token in localStorage (no database for InstaPotat)
       localStorage.setItem('instapotat_access_token', data.access_token);
       localStorage.setItem('instapotat_portal_id', accountData.portalId);
 
-      console.log('💾 Token stored in localStorage');
-
-      // Step 4: Success! Redirect after brief delay
       setStatusMessage(`🎉 InstaPotat installed successfully for Portal ${accountData.portalId}!`);
       setIsProcessing(false);
 
-      console.log('🚀 Redirecting to:', returnUrl);
-
-      // Give user time to see success message
       setTimeout(() => {
         setStatusMessage('🌟 Redirecting you now...');
         setTimeout(() => {
@@ -141,7 +122,7 @@ function InstaPotatOAuthPage() {
       }, 1500);
 
     } catch (error) {
-      console.error('❌ Installation failed:', error);
+      console.error('Installation failed:', error);
       setStatusMessage(`🍠 Installation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
       setIsProcessing(false);
     }

@@ -207,6 +207,11 @@ export function formatSearchResults(
 }
 
 /**
+ * HubSpot API base URL
+ */
+export const HUBSPOT_API_BASE = 'https://api.hubapiqa.com';
+
+/**
  * Standard MCP error codes
  */
 export const MCPErrorCodes = {

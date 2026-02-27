@@ -21,9 +21,8 @@ import {
   createErrorResult,
   formatHubSpotObject,
   formatSearchResults,
+  HUBSPOT_API_BASE,
 } from '../../../lib/mcp/types.js';
-
-const HUBSPOT_API_BASE = 'https://api.hubapiqa.com';
 
 /**
  * Tool 1: Create Deal

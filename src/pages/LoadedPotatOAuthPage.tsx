@@ -79,8 +79,6 @@ function LoadedPotatOAuthPage() {
     const code = getQueryParam('code');
     const state = getQueryParam('state');
 
-    console.log('🥔 Initializing Loaded Potat with step:', step);
-
     const currentStepValue = step || 'legacy';
 
     switch (currentStepValue) {
@@ -99,43 +97,30 @@ function LoadedPotatOAuthPage() {
     }
   }
 
-  function showAuthorizeForm(): void {
-    console.log('🥔 Ready for authorization step - potato login!');
-  }
+  function showAuthorizeForm(): void {}
 
   function handleLegacyFlow(): void {
-    console.log('🥔 Legacy flow: Showing login form');
     showAuthorizeForm();
   }
 
   async function handleFinalizeStep(code: string | null, state: string | null): Promise<void> {
-    console.log('🥔 Finalize step: Validating state and completing installation');
-
     if (!code) {
-      console.log('🚨 Finalize Error: Missing authorization code');
       showError('🚨 Finalize Error: Missing authorization code. Your potato got lost in transit!');
       return;
     }
 
     if (!state) {
-      console.log('🚨 Security Error: Missing state parameter');
       showError('🚨 Security Error: Missing state parameter. Your potato might be compromised!');
       return;
     }
 
-    // Consume the state token and get the associated user ID
-    console.log('🔍 Validating state token from database...');
     const { userId, error: stateError } = await consumeOAuthState(state);
 
     if (stateError || !userId) {
-      console.log('🚨 Security Error:', stateError || 'Invalid state token');
       showError(`🚨 Security Error: ${stateError || 'Invalid state token'}. Your potato session might be expired or compromised! 🛡️`);
       return;
     }
 
-    console.log('✅ State validation successful - proceeding with installation for user:', userId);
-
-    // Exchange code for token and associate with the user
     handleExchangeCodeForToken(code, userId);
   }
 
@@ -155,11 +140,10 @@ function LoadedPotatOAuthPage() {
         userId,
       });
 
-      console.log('✅ token exchange completed:', result);
       displaySuccessMessage(result.portalId || 'Unknown');
 
     } catch (error) {
-      console.error('❌ Token exchange failed:', error);
+      console.error('Token exchange failed:', error);
       showError(`🚨 Installation Error: ${error instanceof Error ? error.message : 'Failed to exchange token'}`);
     }
   }
@@ -204,12 +188,9 @@ function LoadedPotatOAuthPage() {
     const { stateToken, error: stateError } = await createOAuthState(10);
 
     if (stateError || !stateToken) {
-      console.error('❌ Failed to create OAuth state:', stateError);
       showError(`🍠 Failed to create secure state: ${stateError}`);
       return;
     }
-
-    console.log('✅ State token created successfully');
 
     const loadingMessages = [
       "🥔 Preparing your loaded potato...",
@@ -229,8 +210,6 @@ function LoadedPotatOAuthPage() {
     setTimeout(() => {
       clearInterval(loadingInterval);
 
-      console.log('🎫 Authorization successful, redirecting with state:', stateToken.substring(0, 8) + '...');
-
       const returnUrlObj = new URL(returnUrl);
       returnUrlObj.searchParams.set('state', stateToken);
       window.location.href = returnUrlObj.toString();
@@ -242,7 +221,6 @@ function LoadedPotatOAuthPage() {
 
     // If we have a code, exchange it for a token
     if (code) {
-      console.log('🔄 Legacy flow: Found code, exchanging for token');
       const loadingMessages = [
         "🥔 Loading your potato...",
         "🧀 Melting the cheese...",
@@ -266,16 +244,12 @@ function LoadedPotatOAuthPage() {
       return;
     }
 
-    // If no code and we have returnUrl, proceed with authorize flow
     const returnUrl = getQueryParam('returnUrl');
     if (returnUrl) {
-      console.log('🚀 Legacy flow: No code, but have returnUrl - proceeding with authorize');
       handleAuthorizeSubmit();
       return;
     }
 
-    // No code and no returnUrl - show error
-    console.log('🚨 Legacy flow: No code or returnUrl found');
     showError('🥔 Missing parameters! Please start the installation from the HubSpot Marketplace.');
   }
 
@@ -323,7 +297,6 @@ function LoadedPotatOAuthPage() {
           return;
         }
 
-        console.log('✅ Sign up successful! Logging in...');
         setButtonText('🔐 Logging you in...');
 
         // After successful signup, log the user in
@@ -337,7 +310,6 @@ function LoadedPotatOAuthPage() {
           return;
         }
 
-        console.log('✅ Login successful after signup:', authUser.email);
         setWaitingForAuth(true);
         setButtonText('🌱 Authenticated! Processing...');
       } else {
@@ -358,7 +330,6 @@ function LoadedPotatOAuthPage() {
           return;
         }
 
-        console.log('✅ Supabase authentication successful for user:', authUser.email);
         setWaitingForAuth(true);
         setButtonText('🌱 Authenticated! Processing...');
       }

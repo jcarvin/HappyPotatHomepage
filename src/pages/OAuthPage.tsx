@@ -124,8 +124,6 @@ function OAuthPage() {
     const code = getQueryParam('code');
     const state = getQueryParam('state');
 
-    console.log('🥔 Initializing HappyPotato with step:', step);
-
     const currentStepValue = step || 'legacy';
     setCurrentStep(currentStepValue);
 
@@ -146,42 +144,31 @@ function OAuthPage() {
   }
 
   function showAuthorizeForm(): void {
-    console.log('🥔 Ready for authorization step - potato login!');
+    // No-op: form is always shown on mount; kept for readability of the switch block
   }
 
   function handleLegacyFlow(): void {
-    console.log('🥔 Legacy flow: Showing login form');
     showAuthorizeForm();
   }
 
   async function handleFinalizeStep(code: string | null, state: string | null): Promise<void> {
-    console.log('🥔 Finalize step: Validating state and completing installation');
-
     if (!code) {
-      console.log('🚨 Finalize Error: Missing authorization code. Your potato got lost in transit!');
       showError('🚨 Finalize Error: Missing authorization code. Your potato got lost in transit!');
       return;
     }
 
     if (!state) {
-      console.log('🚨 Security Error: Missing state parameter. Your potato might be compromised!');
       showError('🚨 Security Error: Missing state parameter. Your potato might be compromised!');
       return;
     }
 
-    // Consume the state token and get the associated user ID
-    console.log('🔍 Validating state token from database...');
     const { userId, error: stateError } = await consumeOAuthState(state);
 
     if (stateError || !userId) {
-      console.log('🚨 Security Error:', stateError || 'Invalid state token');
       showError(`🚨 Security Error: ${stateError || 'Invalid state token'}. Your potato session might be expired or compromised! 🛡️`);
       return;
     }
 
-    console.log('✅ State validation successful - proceeding with installation for user:', userId);
-
-    // Exchange code for token and associate with the user
     handleExchangeCodeForToken(code, userId);
   }
 
@@ -202,17 +189,13 @@ function OAuthPage() {
       });
 
       if (!result.success) {
-        console.error('❌ Token exchange failed:', result.error);
         showError(`🍠 ${result.error || 'Something went wrong in the potato field! Please try again.'}`);
         return;
       }
 
-      console.log('✅ Token exchange and save complete!');
-
       if (result.portalId) {
         displayWelcomeMessage(result.portalId);
       } else {
-        console.error('Portal ID not found in result');
         showError('🥔 Oops! Could not find your potato farm ID. Please try again!');
       }
     } catch (error) {
@@ -235,12 +218,9 @@ function OAuthPage() {
     const { stateToken, error: stateError } = await createOAuthState(10);
 
     if (stateError || !stateToken) {
-      console.error('❌ Failed to create OAuth state:', stateError);
       showError(`🍠 Failed to create secure state: ${stateError}`);
       return;
     }
-
-    console.log('✅ State token created successfully');
 
     const loadingMessages = [
       "🌱 Planting security seeds...",
@@ -260,8 +240,6 @@ function OAuthPage() {
     setTimeout(() => {
       clearInterval(loadingInterval);
 
-      console.log('🎫 Authorization successful, redirecting with state:', stateToken.substring(0, 8) + '...');
-
       const returnUrlObj = new URL(returnUrl);
       returnUrlObj.searchParams.set('state', stateToken);
       window.location.href = returnUrlObj.toString();
@@ -273,7 +251,6 @@ function OAuthPage() {
 
     // If we have a code, exchange it for a token
     if (code) {
-      console.log('🔄 Legacy flow: Found code, exchanging for token');
       const loadingMessages = [
         "🌱 Planting seeds...",
         "🥔 Growing potatoes...",
@@ -297,10 +274,6 @@ function OAuthPage() {
       return;
     }
 
-    // If no code in legacy flow, redirect to HubSpot OAuth
-    // Note: Legacy flow normally expects a code to already exist, but we'll
-    // handle the case where the user is starting fresh by redirecting to OAuth
-    console.log('🚀 Legacy flow: No code found, initiating OAuth redirect');
     setButtonText('🚀 Redirecting to HubSpot...');
     setShowForm(false);
     setShowWelcome(true);
@@ -392,7 +365,6 @@ function OAuthPage() {
           return;
         }
 
-        console.log('✅ Sign up successful! Logging in...');
         setButtonText('🔐 Logging you in...');
 
         // After successful signup, log the user in
@@ -406,7 +378,6 @@ function OAuthPage() {
           return;
         }
 
-        console.log('✅ Login successful after signup:', authUser.email);
         setWaitingForAuth(true);
         setButtonText('🌱 Authenticated! Processing...');
       } else {
@@ -427,7 +398,6 @@ function OAuthPage() {
           return;
         }
 
-        console.log('✅ Supabase authentication successful for user:', authUser.email);
         setWaitingForAuth(true);
         setButtonText('🌱 Authenticated! Processing...');
       }

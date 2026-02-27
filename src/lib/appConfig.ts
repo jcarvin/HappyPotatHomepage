@@ -63,16 +63,3 @@ export function getAppConfig(appName: AppName): AppConfig {
   return config;
 }
 
-/**
- * Validate if a string is a valid app name
- */
-export function isValidAppName(name: string): name is AppName {
-  return ['potat', 'instapotat', 'loadedpotat', 'potataugratin'].includes(name);
-}
-
-/**
- * Get all app names
- */
-export function getAllAppNames(): AppName[] {
-  return ['potat', 'instapotat', 'loadedpotat', 'potataugratin'];
-}

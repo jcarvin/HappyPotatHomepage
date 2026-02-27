@@ -217,18 +217,14 @@ export async function ensureUserProfile(): Promise<{ success: boolean; error: st
       .single();
 
     if (selectError && selectError.code !== 'PGRST116') { // PGRST116 is "not found"
-      console.error('❌ Error checking for profile:', selectError);
+      console.error('Error checking for profile:', selectError);
       return { success: false, error: selectError.message };
     }
 
-    // If profile exists, we're good
     if (existingProfile) {
-      console.log('✅ User profile already exists');
       return { success: true, error: null };
     }
 
-    // Create profile if it doesn't exist
-    console.log('📝 Creating missing user profile...');
     const username = user.email?.split('@')[0] || `user_${user.id.slice(0, 8)}`;
 
     const { error: insertError } = await supabase
@@ -240,14 +236,13 @@ export async function ensureUserProfile(): Promise<{ success: boolean; error: st
       });
 
     if (insertError) {
-      console.error('❌ Failed to create profile:', insertError);
+      console.error('Failed to create profile:', insertError);
       return { success: false, error: insertError.message };
     }
 
-    console.log('✅ User profile created successfully');
     return { success: true, error: null };
   } catch (err) {
-    console.error('❌ Unexpected error in ensureUserProfile:', err);
+    console.error('Unexpected error in ensureUserProfile:', err);
     return { success: false, error: err instanceof Error ? err.message : 'Failed to ensure profile' };
   }
 }
@@ -262,17 +257,12 @@ export async function updateApiToken(
   expiresIn?: number
 ): Promise<{ success: boolean; error: string | null }> {
   try {
-    console.log(`🔍 updateApiToken: Starting update process for ${appName}...`);
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
-      console.error('❌ updateApiToken: No authenticated user found');
       return { success: false, error: 'Not authenticated' };
     }
 
-    console.log(`✅ updateApiToken: User authenticated: ${user.id}`);
-
-    // Calculate expiry time if provided
     const expiresAt = expiresIn
       ? new Date(Date.now() + expiresIn * 1000).toISOString()
       : null;
@@ -287,19 +277,17 @@ export async function updateApiToken(
     });
 
     if (error) {
-      console.error(`❌ updateApiToken: Database error for ${appName}:`, error);
+      console.error(`updateApiToken: Database error for ${appName}:`, error);
       return { success: false, error: error.message };
     }
 
     if (!data || data.success !== true) {
-      console.error(`❌ updateApiToken: Failed to save ${appName} token`);
       return { success: false, error: 'Failed to save token' };
     }
 
-    console.log(`✅ updateApiToken: Successfully updated ${appName} token!`);
     return { success: true, error: null };
   } catch (err) {
-    console.error(`❌ updateApiToken: Unexpected error for ${appName}:`, err);
+    console.error(`updateApiToken: Unexpected error for ${appName}:`, err);
     return { success: false, error: err instanceof Error ? err.message : 'Update failed' };
   }
 }
@@ -346,7 +334,6 @@ export function generateStateToken(): string {
 export function generateCodeVerifier(): string {
   const array = new Uint8Array(32);
   crypto.getRandomValues(array);
-  // return "IhnjJ2pMrAc-fq-ZXpqvLkQHAyPxQYJgWJvcA8fsvgxPaB8f0PIiyxnczvli72GX"
   return btoa(String.fromCharCode(...array))
     .replace(/\+/g, '-')
     .replace(/\//g, '_')
@@ -358,11 +345,9 @@ export function generateCodeVerifier(): string {
  * SHA-256 hash of the verifier, base64url-encoded (no padding)
  */
 export async function generateCodeChallenge(verifier: string): Promise<string> {
-  console.log(verifier)
   const encoder = new TextEncoder();
   const data = encoder.encode(verifier);
   const digest = await crypto.subtle.digest('SHA-256', data);
-// return "lq4D1veJr7tMx9udhydfJb1KusQBeLrDt7Bz-70nqwQ"
   return btoa(String.fromCharCode(...new Uint8Array(digest)))
     .replace(/\+/g, '-')
     .replace(/\//g, '_')
@@ -382,10 +367,8 @@ export async function createOAuthState(expiresMinutes: number = 10, codeVerifier
     }
 
     const stateToken = generateStateToken();
-    console.log('🔐 Creating OAuth state for user:', user.id);
 
-    // Call the database function to create state
-    const { data, error } = await supabase.rpc('create_oauth_state', {
+    const { error } = await supabase.rpc('create_oauth_state', {
       p_state_token: stateToken,
       p_user_id: user.id,
       p_expires_minutes: expiresMinutes,
@@ -393,14 +376,13 @@ export async function createOAuthState(expiresMinutes: number = 10, codeVerifier
     });
 
     if (error) {
-      console.error('❌ Failed to create OAuth state:', error);
+      console.error('Failed to create OAuth state:', error);
       return { stateToken: null, error: error.message };
     }
 
-    console.log('✅ OAuth state created successfully:', data);
     return { stateToken, error: null };
   } catch (err) {
-    console.error('❌ Unexpected error creating OAuth state:', err);
+    console.error('Unexpected error creating OAuth state:', err);
     return { stateToken: null, error: err instanceof Error ? err.message : 'Failed to create state' };
   }
 }
@@ -411,35 +393,28 @@ export async function createOAuthState(expiresMinutes: number = 10, codeVerifier
  */
 export async function consumeOAuthState(stateToken: string): Promise<{ userId: string | null; codeVerifier: string | null; error: string | null }> {
   try {
-    console.log('🔍 Consuming OAuth state:', stateToken.substring(0, 8) + '...');
-
-    // Call the database function to consume state
     const { data, error } = await supabase.rpc('consume_oauth_state', {
       p_state_token: stateToken
     });
 
     if (error) {
-      console.error('❌ Failed to consume OAuth state:', error);
+      console.error('Failed to consume OAuth state:', error);
       return { userId: null, codeVerifier: null, error: error.message };
     }
 
-    // The function returns a single row with user_id, is_valid, error_message, code_verifier
     const result = Array.isArray(data) ? data[0] : data;
 
     if (!result) {
-      console.error('❌ No result from consume_oauth_state');
       return { userId: null, codeVerifier: null, error: 'Invalid state token' };
     }
 
     if (!result.is_valid) {
-      console.error('❌ State validation failed:', result.error_message);
       return { userId: null, codeVerifier: null, error: result.error_message || 'Invalid state token' };
     }
 
-    console.log('✅ OAuth state consumed successfully for user:', result.user_id);
     return { userId: result.user_id, codeVerifier: result.code_verifier ?? null, error: null };
   } catch (err) {
-    console.error('❌ Unexpected error consuming OAuth state:', err);
+    console.error('Unexpected error consuming OAuth state:', err);
     return { userId: null, codeVerifier: null, error: err instanceof Error ? err.message : 'Failed to consume state' };
   }
 }
@@ -457,16 +432,11 @@ export async function updateApiTokenForUser(
   expiresIn?: number
 ): Promise<{ success: boolean; error: string | null }> {
   try {
-    console.log(`🔍 updateApiTokenForUser: Updating ${appName} token for user:`, userId);
-
-    // Calculate expiry time if provided
     const expiresAt = expiresIn
       ? new Date(Date.now() + expiresIn * 1000).toISOString()
       : null;
 
-    // Use the database function that bypasses RLS with SECURITY DEFINER
-    // This is necessary because OAuth callbacks happen in unauthenticated contexts
-    console.log(`📝 Calling database function to upsert ${appName} token...`);
+    // Uses SECURITY DEFINER to bypass RLS — necessary for unauthenticated OAuth callbacks
     const { data, error } = await supabase.rpc('upsert_app_token', {
       p_user_id: userId,
       p_app_name: appName,
@@ -476,19 +446,17 @@ export async function updateApiTokenForUser(
     });
 
     if (error) {
-      console.error(`❌ Failed to upsert ${appName} token via function:`, error);
+      console.error(`Failed to upsert ${appName} token:`, error);
       return { success: false, error: error.message };
     }
 
     if (!data || data.success !== true) {
-      console.warn(`⚠️ Failed to save ${appName} token`);
       return { success: false, error: 'Failed to save token' };
     }
 
-    console.log(`✅ ${appName} token saved successfully via database function`);
     return { success: true, error: null };
   } catch (err) {
-    console.error(`❌ Unexpected error updating ${appName} token:`, err);
+    console.error(`Unexpected error updating ${appName} token:`, err);
     return { success: false, error: err instanceof Error ? err.message : 'Update failed' };
   }
 }
@@ -528,14 +496,9 @@ export async function getValidAccessToken(): Promise<{ token: string | null; err
 
     const isExpiredOrExpiringSoon = !expiresAt || expiresAt <= fiveMinutesFromNow;
 
-    // If token is still valid, return it
     if (!isExpiredOrExpiringSoon) {
-      console.log('✅ Access token is still valid');
       return { token: profile.api_token, error: null };
     }
-
-    // Token is expired or expiring soon, try to refresh it
-    console.log('🔄 Access token expired or expiring soon, refreshing...');
 
     if (!profile.refresh_token) {
       return { token: null, error: 'Access token expired and no refresh token available. Please re-authenticate with HubSpot.' };
@@ -556,13 +519,12 @@ export async function getValidAccessToken(): Promise<{ token: string | null; err
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      console.error('❌ Token refresh failed:', errorData);
+      console.error('Token refresh failed:', errorData);
       return { token: null, error: 'Failed to refresh access token. Please re-authenticate with HubSpot.' };
     }
 
     const tokenData = await response.json();
 
-    // Save the new tokens
     const updateResult = await updateApiToken(
       tokenData.access_token,
       tokenData.refresh_token,
@@ -570,15 +532,13 @@ export async function getValidAccessToken(): Promise<{ token: string | null; err
     );
 
     if (!updateResult.success) {
-      console.error('❌ Failed to save refreshed token:', updateResult.error);
-      // Return the token anyway since we got it, but log the error
+      console.error('Failed to save refreshed token:', updateResult.error);
       return { token: tokenData.access_token, error: null };
     }
 
-    console.log('✅ Access token refreshed successfully');
     return { token: tokenData.access_token, error: null };
   } catch (err) {
-    console.error('❌ Error getting valid access token:', err);
+    console.error('Error getting valid access token:', err);
     return { token: null, error: err instanceof Error ? err.message : 'Failed to get access token' };
   }
 }
@@ -604,7 +564,6 @@ export async function getAppToken(
       .single();
 
     if (error || !data) {
-      console.log(`⚠️ No ${appName} token found for user`);
       return { token: null, refreshToken: null, expiresAt: null, error: `No ${appName} token found. Please authenticate this app.` };
     }
 
@@ -615,7 +574,7 @@ export async function getAppToken(
       error: null
     };
   } catch (err) {
-    console.error(`❌ Error getting ${appName} token:`, err);
+    console.error(`Error getting ${appName} token:`, err);
     return { token: null, refreshToken: null, expiresAt: null, error: err instanceof Error ? err.message : 'Failed to get token' };
   }
 }
@@ -637,14 +596,14 @@ export async function getInstalledApps(): Promise<{ apps: AppName[]; error: stri
       .eq('user_id', user.id);
 
     if (error) {
-      console.error('❌ Error fetching installed apps:', error);
+      console.error('Error fetching installed apps:', error);
       return { apps: [], error: error.message };
     }
 
     const apps = (data || []).map(row => row.app_name as AppName);
     return { apps, error: null };
   } catch (err) {
-    console.error('❌ Error getting installed apps:', err);
+    console.error('Error getting installed apps:', err);
     return { apps: [], error: err instanceof Error ? err.message : 'Failed to get apps' };
   }
 }

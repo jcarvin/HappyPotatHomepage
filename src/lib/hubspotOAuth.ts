@@ -34,8 +34,6 @@ export interface AccountInfo {
 export async function exchangeCodeForToken(options: TokenExchangeOptions): Promise<TokenExchangeResult> {
   const { code, appName, clientId, clientSecret, redirectUri, userId, codeVerifier } = options;
 
-  console.log(`🔄 Exchanging OAuth code for tokens (app: ${appName})...`);
-
   try {
     const response = await fetch('https://api.hubapiqa.com/oauth/v1/token', {
       method: 'POST',
@@ -54,7 +52,7 @@ export async function exchangeCodeForToken(options: TokenExchangeOptions): Promi
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ Token exchange failed:', response.status, errorText);
+      console.error('Token exchange failed:', response.status, errorText);
       return {
         success: false,
         error: `Token exchange failed: ${response.status} ${errorText}`
@@ -64,18 +62,11 @@ export async function exchangeCodeForToken(options: TokenExchangeOptions): Promi
     const data = await response.json();
 
     if (!data.access_token) {
-      console.error('❌ No access token in response');
       return {
         success: false,
         error: 'No access token received from HubSpot'
       };
     }
-
-    console.log('✅ token exchange completed:', {
-      hasAccessToken: !!data.access_token,
-      hasRefreshToken: !!data.refresh_token,
-      expiresIn: data.expires_in
-    });
 
     // Store tokens in localStorage as backup
     localStorage.setItem('access_token', data.access_token);
@@ -83,15 +74,10 @@ export async function exchangeCodeForToken(options: TokenExchangeOptions): Promi
       localStorage.setItem('refresh_token', data.refresh_token);
     }
 
-    // Save tokens to database
-    console.log('💾 Saving HubSpot tokens to database...');
-
     let saveSuccess = false;
     let saveError: string | null = null;
 
     if (userId) {
-      // Save for specific user (OAuth callback without auth session)
-      console.log(`🔑 Saving ${appName} tokens for user:`, userId);
       const result = await updateApiTokenForUser(
         userId,
         appName,
@@ -102,8 +88,6 @@ export async function exchangeCodeForToken(options: TokenExchangeOptions): Promi
       saveSuccess = result.success;
       saveError = result.error;
     } else {
-      // Save for current authenticated user
-      console.log(`🔑 Saving ${appName} tokens for authenticated user`);
       const result = await updateApiToken(
         appName,
         data.access_token,
@@ -115,7 +99,7 @@ export async function exchangeCodeForToken(options: TokenExchangeOptions): Promi
     }
 
     if (saveError) {
-      console.error('❌ Failed to save tokens to database:', saveError);
+      console.error('Failed to save tokens to database:', saveError);
       return {
         success: false,
         accessToken: data.access_token,
@@ -126,7 +110,6 @@ export async function exchangeCodeForToken(options: TokenExchangeOptions): Promi
     }
 
     if (!saveSuccess) {
-      console.error('❌ Token save returned false');
       return {
         success: false,
         accessToken: data.access_token,
@@ -136,13 +119,9 @@ export async function exchangeCodeForToken(options: TokenExchangeOptions): Promi
       };
     }
 
-    console.log('✅ Tokens saved successfully to database');
-
-    // Fetch account info to get portal ID
     const accountInfo = await fetchAccountInfo(data.access_token);
 
     if (!accountInfo.portalId) {
-      console.warn('⚠️ Could not fetch portal ID');
       return {
         success: true,
         accessToken: data.access_token,
@@ -152,8 +131,6 @@ export async function exchangeCodeForToken(options: TokenExchangeOptions): Promi
       };
     }
 
-    console.log('✅ OAuth flow complete! Portal ID:', accountInfo.portalId);
-
     return {
       success: true,
       accessToken: data.access_token,
@@ -162,7 +139,7 @@ export async function exchangeCodeForToken(options: TokenExchangeOptions): Promi
       portalId: accountInfo.portalId
     };
   } catch (error) {
-    console.error('❌ Error during token exchange:', error);
+    console.error('Error during token exchange:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error during token exchange'
@@ -175,8 +152,6 @@ export async function exchangeCodeForToken(options: TokenExchangeOptions): Promi
  */
 export async function fetchAccountInfo(accessToken: string): Promise<AccountInfo> {
   try {
-    console.log('🔍 Fetching account info from HubSpot...');
-
     const response = await fetch('https://api.hubspotqa.com/account-info/v3/api-usage/daily', {
       headers: {
         'Authorization': `Bearer ${accessToken}`
@@ -184,17 +159,11 @@ export async function fetchAccountInfo(accessToken: string): Promise<AccountInfo
     });
 
     if (!response.ok) {
-      console.error('❌ Failed to fetch account info:', response.status);
+      console.error('Failed to fetch account info:', response.status);
       return { portalId: '' };
     }
 
     const data = await response.json();
-
-    console.log('✅ Account info fetched:', {
-      portalId: data.portalId,
-      hubId: data.hubId
-    });
-
     return {
       portalId: String(data.portalId),
       hubId: data.hubId,
@@ -203,7 +172,7 @@ export async function fetchAccountInfo(accessToken: string): Promise<AccountInfo
       hubDomain: data.hubDomain
     };
   } catch (error) {
-    console.error('❌ Error fetching account info:', error);
+    console.error('Error fetching account info:', error);
     return { portalId: '' };
   }
 }

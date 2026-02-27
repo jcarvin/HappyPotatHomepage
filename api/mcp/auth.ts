@@ -138,9 +138,8 @@ export async function validateMCPRequest(
   // If we have a portal ID, use it for lookup
   if (targetPortalId) {
     query = query.eq('user_id', targetPortalId);
-    console.log(`🎯 Looking up HubSpot tokens for portal: ${targetPortalId}`);
   } else {
-    console.warn('⚠️ No portal ID available - using most recent app installation (may be incorrect for multi-portal setups)');
+    console.warn('No portal ID available - using most recent app installation (may be incorrect for multi-portal setups)');
   }
 
   const { data: appToken, error: tokenError } = await query
@@ -181,8 +180,6 @@ export async function validateMCPRequest(
 
     // Refresh if expired or expiring soon
     if (expiresAt <= fiveMinutesFromNow) {
-      console.log('🔄 HubSpot token expiring soon, refreshing...');
-      
       try {
         const apiBaseUrl = process.env.API_BASE_URL || 'https://happy-potat-homepage.vercel.app';
         const refreshResponse = await fetch(`${apiBaseUrl}/api/refresh-hubspot-token`, {
@@ -200,7 +197,6 @@ export async function validateMCPRequest(
           const newTokens = await refreshResponse.json();
           hubspotAccessToken = newTokens.access_token;
 
-          // Update in database
           await supabase
             .from('app_tokens')
             .update({
@@ -210,14 +206,12 @@ export async function validateMCPRequest(
             })
             .eq('app_name', 'loadedpotat')
             .eq('user_id', appToken.user_id);
-
-          console.log('✅ HubSpot token refreshed successfully');
         } else {
           const errorData = await refreshResponse.json().catch(() => ({}));
-          console.error('❌ Failed to refresh HubSpot token:', errorData);
+          console.error('Failed to refresh HubSpot token:', errorData);
         }
       } catch (refreshError) {
-        console.error('❌ Error during HubSpot token refresh:', refreshError);
+        console.error('Error during HubSpot token refresh:', refreshError);
       }
     }
   }
