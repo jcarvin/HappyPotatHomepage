@@ -36,7 +36,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // CORS headers for cross-origin requests
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   // Handle preflight OPTIONS request
@@ -44,7 +44,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).end();
   }
 
-  // Only accept POST requests
+  // Handle GET requests for SSE transport (MCP Streamable HTTP spec)
+  // Serverless functions can't hold open a persistent SSE connection, so we
+  // return a valid SSE response that closes immediately. Breeze should fall
+  // back to POST for actual JSON-RPC requests.
+  if (req.method === 'GET') {
+    console.log('📡 SSE GET request received - returning empty SSE stream');
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    return res.status(200).end();
+  }
+
+  // Only accept POST requests (after GET is handled above)
   if (req.method !== 'POST') {
     return res.status(405).json({
       jsonrpc: '2.0',
@@ -119,6 +131,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         } as MCPSuccessResponse);
 
       case 'initialized':
+      case 'notifications/initialized':
         // Client notification acknowledging the handshake - no meaningful response body needed
         console.log('✅ MCP initialized notification received');
         return res.status(200).json({
