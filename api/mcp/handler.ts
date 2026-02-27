@@ -88,6 +88,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Route to appropriate method handler
     switch (method) {
+      case 'initialize':
+        // MCP protocol handshake - client sends capabilities, server responds with its own
+        console.log('🤝 MCP initialize handshake');
+        return res.status(200).json({
+          jsonrpc: '2.0',
+          result: {
+            protocolVersion: '2024-11-05',
+            capabilities: {
+              tools: {},
+            },
+            serverInfo: {
+              name: 'loaded-potat-mcp',
+              version: '1.0.0',
+            },
+          },
+          id,
+        } as MCPSuccessResponse);
+
+      case 'initialized':
+        // Client notification acknowledging the handshake - no meaningful response body needed
+        console.log('✅ MCP initialized notification received');
+        return res.status(200).json({
+          jsonrpc: '2.0',
+          result: null,
+          id,
+        } as MCPSuccessResponse);
+
       case 'tools/list':
         // Return all available tools
         const tools = getAllTools();
