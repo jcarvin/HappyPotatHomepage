@@ -155,7 +155,7 @@ export function getAllTools(): MCPTool[] {
  */
 export async function executeTool(
   toolName: string,
-  params: any,
+  params: Record<string, unknown>,
   accessToken: string
 ): Promise<MCPToolResult> {
   const tool = toolRegistry[toolName];
