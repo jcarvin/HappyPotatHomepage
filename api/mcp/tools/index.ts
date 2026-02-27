@@ -21,6 +21,12 @@ import {
   executeListContactProperties,
 } from './contacts.js';
 
+// Import potat tools
+import {
+  getPotatFixinsTool,
+  executeGetPotatFixins,
+} from './potat.js';
+
 // Import deal tools
 import {
   createDealTool,
@@ -39,6 +45,12 @@ import {
  * Tool registry mapping tool names to definitions and executors
  */
 const toolRegistry: Record<string, { definition: MCPTool; executor: ToolExecutor }> = {
+  // Potat tools
+  get_potat_fixins: {
+    definition: getPotatFixinsTool,
+    executor: (params) => executeGetPotatFixins(params),
+  },
+
   // Contact tools
   create_contact: {
     definition: createContactTool,
