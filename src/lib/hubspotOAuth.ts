@@ -29,33 +29,39 @@ export interface AccountInfo {
 }
 
 /**
- * Exchange OAuth authorization code for access and refresh tokens
+ * Exchange OAuth authorization code for access and refresh tokens.
+ * Routes through /api/refresh-hubspot-token (server-side proxy) to avoid
+ * CORS issues when calling HubSpot's token endpoint from the browser.
  */
 export async function exchangeCodeForToken(options: TokenExchangeOptions): Promise<TokenExchangeResult> {
   const { code, appName, clientId, clientSecret, redirectUri, userId, codeVerifier } = options;
 
   try {
-    const response = await fetch('https://api.hubapiqa.com/oauth/v1/token', {
+    const body: Record<string, string> = {
+      grant_type: 'authorization_code',
+      code,
+      client_id: clientId,
+      client_secret: clientSecret,
+      redirect_uri: redirectUri,
+    };
+    if (codeVerifier) {
+      body.code_verifier = codeVerifier;
+    }
+
+    const response = await fetch('/api/refresh-hubspot-token', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
+        'Content-Type': 'application/json'
       },
-      body: new URLSearchParams({
-        grant_type: 'authorization_code',
-        code,
-        client_id: clientId,
-        client_secret: clientSecret,
-        redirect_uri: redirectUri,
-        ...(codeVerifier ? { code_verifier: codeVerifier } : {})
-      })
+      body: JSON.stringify(body),
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Token exchange failed:', response.status, errorText);
+      const errorData = await response.json().catch(() => ({}));
+      console.error('Token exchange failed:', response.status, errorData);
       return {
         success: false,
-        error: `Token exchange failed: ${response.status} ${errorText}`
+        error: `Token exchange failed: ${response.status} ${errorData.error || JSON.stringify(errorData)}`
       };
     }
 

@@ -1,8 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-const CLIENT_ID = process.env.VITE_HUBSPOT_CLIENT_ID || process.env.HUBSPOT_CLIENT_ID;
-const CLIENT_SECRET = process.env.VITE_HUBSPOT_CLIENT_SECRET || process.env.HUBSPOT_CLIENT_SECRET;
-
 export default async function handler(
   req: VercelRequest,
   res: VercelResponse
@@ -22,8 +19,71 @@ export default async function handler(
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { refresh_token, client_id, client_secret, app_name = 'potat' } = req.body;
+  const {
+    grant_type = 'refresh_token',
+    // authorization_code params
+    code,
+    redirect_uri,
+    code_verifier,
+    // refresh_token params
+    refresh_token,
+    app_name = 'potat',
+    // explicit credentials (used by authorization_code callers; optional for refresh_token)
+    client_id,
+    client_secret,
+  } = req.body;
 
+  // ── authorization_code grant ──────────────────────────────────────────────
+  if (grant_type === 'authorization_code') {
+    if (!code || !redirect_uri || !client_id || !client_secret) {
+      return res.status(400).json({
+        error: 'code, redirect_uri, client_id, and client_secret are required for authorization_code grant'
+      });
+    }
+
+    try {
+      const params: Record<string, string> = {
+        grant_type: 'authorization_code',
+        code,
+        client_id,
+        client_secret,
+        redirect_uri,
+      };
+      if (code_verifier) {
+        params.code_verifier = code_verifier;
+      }
+
+      const response = await fetch('https://api.hubapiqa.com/oauth/v1/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams(params),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('HubSpot authorization_code exchange failed:', errorData);
+        return res.status(response.status).json({
+          error: 'Token exchange failed',
+          details: errorData,
+        });
+      }
+
+      const tokenData = await response.json();
+      return res.status(200).json({
+        access_token: tokenData.access_token,
+        refresh_token: tokenData.refresh_token,
+        expires_in: tokenData.expires_in,
+      });
+    } catch (error) {
+      console.error('Error during authorization_code exchange:', error);
+      return res.status(500).json({
+        error: 'Internal server error',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
+  // ── refresh_token grant (existing behavior) ───────────────────────────────
   if (!refresh_token) {
     return res.status(400).json({ error: 'refresh_token is required' });
   }
