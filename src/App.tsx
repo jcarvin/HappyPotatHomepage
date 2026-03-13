@@ -57,7 +57,7 @@ function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/profile" element={<ProfilePage />} />
       <Route path="/oauth" element={<OAuthPage />} />
-      <Route path="/augratin-oauth" element={<AugratinOAuthPage />} />
+      <Route path="/augratin-oauth/skip-hs-auth" element={<AugratinOAuthPage />} />
       <Route path="/augratin-oauth/with-hs-auth" element={<OAuthPage />} />
       <Route path="/insta-potat/no-auth" element={<InstaPotatOAuthPage />} />
       <Route path="/loaded-potat-oauth" element={<LoadedPotatOAuthPage />} />
