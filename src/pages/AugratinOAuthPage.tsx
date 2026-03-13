@@ -1,14 +1,15 @@
-import { useEffect, useState } from 'react';
-import { loginUser, registerUser } from '../lib/auth';
-import { useAuth } from '../hooks/useAuth';
+import { useEffect, useState, useRef } from 'react';
+import { loginUser, registerUser, createOAuthState, consumeOAuthState } from '../lib/auth';
 import { exchangeCodeForToken } from '../lib/hubspotOAuth';
+import { useAuth } from '../hooks/useAuth';
 import './AugratinOAuth.css';
 
 const CLIENT_ID = import.meta.env.VITE_AU_GRATIN_CLIENT_ID;
 const CLIENT_SECRET = import.meta.env.VITE_AU_GRATIN_CLIENT_SECRET;
 const REDIRECT_URI = import.meta.env.VITE_AU_GRATIN_REDIRECT_URI;
 
-type Step = 'auth' | 'tierSelection' | 'authorizing' | 'success';
+type OAuthStep = 'authorize' | 'finalize';
+type UiStep = 'auth' | 'tierSelection' | 'processing' | 'success' | 'error';
 type AuthMode = 'login' | 'signup';
 type Tier = 1 | 2 | 3;
 
@@ -19,7 +20,16 @@ interface TierConfig {
   features: string[];
   scopes: string[];
   optionalScopes: string[];
+  conditionalScopes: string[];
 }
+
+const CONDITIONAL_SCOPES = [
+  'automation.sequences.read',
+  'automation.sequences.enrollments.write',
+  'scheduler.meetings.meeting-link.read',
+  'settings.users.read',
+  'settings.users.write',
+];
 
 const TIER_CONFIGS: Record<Tier, TierConfig> = {
   1: {
@@ -41,7 +51,8 @@ const TIER_CONFIGS: Record<Tier, TierConfig> = {
       'crm.lists.read',
       'crm.lists.write'
     ],
-    optionalScopes: []
+    optionalScopes: [],
+    conditionalScopes: []
   },
   2: {
     name: 'Enhanced',
@@ -70,7 +81,8 @@ const TIER_CONFIGS: Record<Tier, TierConfig> = {
       'files',
       'forms',
       'timeline'
-    ]
+    ],
+    conditionalScopes: []
   },
   3: {
     name: 'Complete',
@@ -92,12 +104,7 @@ const TIER_CONFIGS: Record<Tier, TierConfig> = {
       'crm.objects.deals.read',
       'crm.objects.deals.write',
       'crm.lists.read',
-      'crm.lists.write',
-      'automation.sequences.read',
-      'automation.sequences.enrollments.write',
-      'scheduler.meetings.meeting-link.read',
-      'settings.users.read',
-      'settings.users.write'
+      'crm.lists.write'
     ],
     optionalScopes: [
       'conversations.read',
@@ -107,13 +114,19 @@ const TIER_CONFIGS: Record<Tier, TierConfig> = {
       'timeline',
       'automation',
       'analytics.behavioral_events.send'
-    ]
+    ],
+    conditionalScopes: CONDITIONAL_SCOPES
   }
 };
 
-function AugratinOAuthSkipHsAuthPage() {
+function AugratinOAuthPage() {
   const { user, loading: authLoading } = useAuth();
-  const [step, setStep] = useState<Step>('auth');
+  const [uiStep, setUiStep] = useState<UiStep>('auth');
+  const [selectedTier, setSelectedTier] = useState<Tier | null>(null);
+  const [statusMessage, setStatusMessage] = useState('');
+  const [portalId, setPortalId] = useState<string | null>(null);
+  const [waitingForAuth, setWaitingForAuth] = useState(false);
+  const hasProcessedAuth = useRef(false);
 
   // Auth form state
   const [authMode, setAuthMode] = useState<AuthMode>('login');
@@ -123,106 +136,67 @@ function AugratinOAuthSkipHsAuthPage() {
   const [authError, setAuthError] = useState<string | null>(null);
   const [buttonText, setButtonText] = useState('🧀 Enter the Kitchen');
   const [buttonDisabled, setButtonDisabled] = useState(false);
-  const [oauthCode, setOauthCode] = useState<string | null>(null);
-  const [portalId, setPortalId] = useState<string | null>(null);
-  const [exchangingToken, setExchangingToken] = useState(false);
 
-  // Check for OAuth callback - this takes priority over everything
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const authComplete = params.get('authComplete');
-    const code = params.get('code');
-
-    // If there's a code but no authComplete, it's from old OAuth flow - ignore it
-    if (code && !authComplete) {
-      // Clean up the URL
-      const newUrl = new URL(window.location.href);
-      newUrl.searchParams.delete('code');
-      newUrl.searchParams.delete('step');
-      window.history.replaceState({}, '', newUrl.toString());
-      return;
-    }
-
-    if (authComplete === 'true' && code) {
-      setOauthCode(code);
-
-      if (window.opener && !window.opener.closed) {
-        window.opener.postMessage({
-          type: 'oauth_complete',
-          code,
-          params: window.location.search
-        }, window.location.origin);
-
-        setTimeout(() => {
-          window.close();
-        }, 500);
-      } else {
-        // We're in the main window, exchange the code for tokens
-        handleTokenExchange(code);
-      }
-    }
+    initializeApp();
   }, []);
 
-  // Auto-progress to tier selection when authenticated
-  // BUT only if we're not in an OAuth callback flow
+  // For authorize step: skip auth form if already logged in
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const authComplete = params.get('authComplete');
-
-    if (authComplete === 'true') {
-      return;
+    const urlStep = getQueryParam('step');
+    if (urlStep !== 'finalize' && user && !authLoading && uiStep === 'auth') {
+      setUiStep('tierSelection');
     }
+  }, [user, authLoading, uiStep]);
 
-    if (user && !authLoading && step === 'auth') {
-      setStep('tierSelection');
-    }
-  }, [user, authLoading, step]);
-
-  // Listen for messages from OAuth popup
+  // For authorize step: progress to tier selection after successful login
   useEffect(() => {
-    function handleMessage(event: MessageEvent) {
-      // Verify the message is from our origin
-      if (event.origin !== window.location.origin) {
-        return;
-      }
-
-      if (event.data.type === 'oauth_complete') {
-        setOauthCode(event.data.code);
-
-        // Update the URL with the OAuth callback parameters
-        const newUrl = new URL(window.location.href);
-        const params = new URLSearchParams(event.data.params);
-        params.forEach((value, key) => {
-          newUrl.searchParams.set(key, value);
-        });
-        window.history.replaceState({}, '', newUrl.toString());
-
-        // Exchange the code for tokens
-        handleTokenExchange(event.data.code);
-      }
+    if (user && !authLoading && waitingForAuth && !hasProcessedAuth.current) {
+      hasProcessedAuth.current = true;
+      setWaitingForAuth(false);
+      setUiStep('tierSelection');
     }
-
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
-  }, [user]);
+  }, [user, authLoading, waitingForAuth]);
 
   function getQueryParam(param: string): string | null {
     const params = new URLSearchParams(window.location.search);
     return params.get(param);
   }
 
-  async function handleTokenExchange(code: string): Promise<void> {
-    if (exchangingToken) {
+  function initializeApp(): void {
+    const urlStep = getQueryParam('step') as OAuthStep | null;
+
+    if (urlStep === 'finalize') {
+      const code = getQueryParam('code');
+      const state = getQueryParam('state');
+      handleFinalizeStep(code, state);
+    }
+    // authorize: default state handles the login form display
+  }
+
+  async function handleFinalizeStep(code: string | null, state: string | null): Promise<void> {
+    setUiStep('processing');
+    setStatusMessage('🔄 Validating your au gratin credentials...');
+
+    if (!code) {
+      setStatusMessage('🚨 Missing authorization code. Your au gratin got lost in transit!');
+      setUiStep('error');
       return;
     }
 
-    if (!user) {
-      setAuthError('🧀 Please log in first before completing OAuth');
+    if (!state) {
+      setStatusMessage('🚨 Missing state parameter. Your au gratin might be compromised!');
+      setUiStep('error');
       return;
     }
 
-    setExchangingToken(true);
-    setStep('authorizing');
+    const { userId, error: stateError } = await consumeOAuthState(state);
+
+    if (stateError || !userId) {
+      setStatusMessage(`🚨 Security Error: ${stateError || 'Invalid state token'}. Your session may have expired!`);
+      setUiStep('error');
+      return;
+    }
 
     try {
       const result = await exchangeCodeForToken({
@@ -231,13 +205,12 @@ function AugratinOAuthSkipHsAuthPage() {
         clientId: CLIENT_ID,
         clientSecret: CLIENT_SECRET,
         redirectUri: REDIRECT_URI,
-        userId: user.id
+        userId
       });
 
       if (!result.success) {
-        setAuthError(`🧀 Failed to complete installation: ${result.error}`);
-        setStep('tierSelection');
-        setExchangingToken(false);
+        setStatusMessage(`🧀 Failed to complete installation: ${result.error}`);
+        setUiStep('error');
         return;
       }
 
@@ -245,14 +218,10 @@ function AugratinOAuthSkipHsAuthPage() {
         setPortalId(result.portalId);
       }
 
-      // Show success screen
-      setStep('success');
+      setUiStep('success');
     } catch (error) {
-      console.error('❌ Unexpected error during token exchange:', error);
-      setAuthError(`🧀 Unexpected error: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      setStep('tierSelection');
-    } finally {
-      setExchangingToken(false);
+      setStatusMessage(`🧀 Unexpected error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setUiStep('error');
     }
   }
 
@@ -277,6 +246,7 @@ function AugratinOAuthSkipHsAuthPage() {
 
     setButtonDisabled(true);
     setButtonText(authMode === 'login' ? '🔐 Authenticating...' : '🌱 Creating your account...');
+    hasProcessedAuth.current = false;
 
     try {
       if (authMode === 'signup') {
@@ -307,9 +277,6 @@ function AugratinOAuthSkipHsAuthPage() {
           setAuthMode('login');
           return;
         }
-
-        setButtonText('✅ Authenticated!');
-        // useEffect will handle progression to tier selection
       } else {
         const { user: authUser, error: loginError } = await loginUser(email, password);
 
@@ -326,76 +293,70 @@ function AugratinOAuthSkipHsAuthPage() {
           setButtonText('🧀 Enter the Kitchen');
           return;
         }
-
-        setButtonText('✅ Authenticated!');
-        // useEffect will handle progression to tier selection
       }
+
+      setButtonText('✅ Authenticated!');
+      setWaitingForAuth(true);
+      // useEffect will handle progression to tier selection
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An error occurred';
       setAuthError(`🧀 Error: ${errorMessage}`);
       setButtonDisabled(false);
-      setButtonText(authMode === 'login' ? '🧀 Enter the Kitchen' : '🧀 Enter the Kitchen');
+      setButtonText('🧀 Enter the Kitchen');
     }
   }
 
-  function handleTierSelect(tier: Tier): void {
-    setStep('authorizing');
+  async function handleTierSelect(tier: Tier): Promise<void> {
+    setSelectedTier(tier);
 
-    // Build OAuth URL
-    const tierConfig = TIER_CONFIGS[tier];
-    const scopeString = tierConfig.scopes.join('%20');
-    const optionalScopeString = tierConfig.optionalScopes.join('%20');
+    const returnUrl = getQueryParam('returnUrl');
 
-    // Use clean URL with only authComplete param for redirect URI
-    const currentUrl = new URL(window.location.href);
-    const cleanUrl = new URL(`${currentUrl.origin}${currentUrl.pathname}`);
-    cleanUrl.searchParams.set('authComplete', 'true');
-    const redirectUri = cleanUrl.toString();
-
-    let authUrl = `https://app.hubspotqa.com/oauth/authorize?client_id=${CLIENT_ID}&scope=${scopeString}&redirect_uri=${encodeURIComponent(redirectUri)}`;
-
-    // Add optional_scopes parameter if there are any
-    if (tierConfig.optionalScopes.length > 0) {
-      authUrl += `&optional_scopes=${optionalScopeString}`;
-    }
-
-    const popup = window.open(
-      authUrl,
-      'hubspot-oauth',
-      'width=600,height=800,left=400,top=100,scrollbars=yes,resizable=yes'
-    );
-
-    if (!popup) {
-      alert('🧀 Popup blocked! Please allow popups for this site.');
-      setStep('tierSelection');
+    if (!returnUrl) {
+      alert('🧀 No marketplace URL provided. Stay here and enjoy the au gratin!');
       return;
     }
 
-    const checkPopupClosed = setInterval(() => {
-      if (popup.closed) {
-        clearInterval(checkPopupClosed);
+    setUiStep('processing');
+    setStatusMessage('🔐 Creating secure state token...');
 
-        const params = new URLSearchParams(window.location.search);
-        const authComplete = params.get('authComplete');
-        const code = params.get('code');
+    const { stateToken, error: stateError } = await createOAuthState(10);
 
-        if (authComplete === 'true' && code) {
-          setStep('success');
-        } else {
-          setStep('tierSelection');
-        }
+    if (stateError || !stateToken) {
+      setStatusMessage(`🧀 Failed to create secure state: ${stateError}`);
+      setUiStep('error');
+      return;
+    }
+
+    try {
+      const tierConfig = TIER_CONFIGS[tier];
+      const url = new URL(returnUrl);
+
+      const scopeParam = [...tierConfig.scopes, ...tierConfig.conditionalScopes];
+      if (scopeParam.length > 0) {
+        url.searchParams.set('scope', scopeParam.join(' '));
       }
-    }, 500);
+
+      if (tierConfig.optionalScopes.length > 0) {
+        url.searchParams.set('optionalScope', tierConfig.optionalScopes.join(' '));
+      }
+
+      url.searchParams.set('state', stateToken);
+
+      window.location.href = url.toString();
+    } catch {
+      window.location.href = returnUrl;
+    }
   }
 
   function handleReturnToMarketplace(): void {
     const returnUrl = getQueryParam('returnUrl');
-    if (returnUrl) {
-      window.location.href = returnUrl;
-    } else {
-      // Fallback if no returnUrl
+
+    if (!returnUrl) {
       alert('🧀 No marketplace URL provided. Stay here and enjoy the au gratin!');
+      return;
     }
+
+    window.location.href = returnUrl;
   }
 
   return (
@@ -414,8 +375,8 @@ function AugratinOAuthSkipHsAuthPage() {
         <h1 className="title">Au Gratin OAuth</h1>
         <p className="subtitle">Layered with creamy authentication goodness</p>
 
-        {/* Step 1: Authentication */}
-        {step === 'auth' && (
+        {/* Authorize: Step 1 — Login */}
+        {uiStep === 'auth' && (
           <form onSubmit={handleAuthSubmit} className="auth-form">
             {authError && (
               <div className="auth-error">
@@ -511,8 +472,8 @@ function AugratinOAuthSkipHsAuthPage() {
           </form>
         )}
 
-        {/* Step 2: Tier Selection */}
-        {step === 'tierSelection' && (
+        {/* Authorize: Step 2 — Tier Selection */}
+        {uiStep === 'tierSelection' && (
           <div className="tier-selection">
             <h2 className="tier-title">Choose Your Au Gratin Layer</h2>
             <p className="tier-subtitle">Select the perfect level of permissions for your app</p>
@@ -538,6 +499,7 @@ function AugratinOAuthSkipHsAuthPage() {
                     <div className="tier-scope-count">
                       {config.scopes.length} required
                       {config.optionalScopes.length > 0 && ` + ${config.optionalScopes.length} optional`}
+                      {config.conditionalScopes.length > 0 && ` + ${config.conditionalScopes.length} conditional`}
                     </div>
 
                     <button
@@ -553,17 +515,29 @@ function AugratinOAuthSkipHsAuthPage() {
           </div>
         )}
 
-        {/* Step 3: Authorizing (shown briefly before redirect) */}
-        {step === 'authorizing' && (
+        {/* Processing (authorize state creation or finalize token exchange) */}
+        {uiStep === 'processing' && (
           <div className="authorizing-message">
             <div className="spinner">🧀</div>
             <h2>Preparing Your Au Gratin...</h2>
-            <p>Redirecting to HubSpot for authorization</p>
+            <p>{statusMessage}</p>
           </div>
         )}
 
-        {/* Step 4: Success */}
-        {step === 'success' && (
+        {/* Error */}
+        {uiStep === 'error' && (
+          <div className="success-message">
+            <div className="success-icon">❌</div>
+            <h2>Something Went Wrong</h2>
+            <p className="success-description">{statusMessage}</p>
+            <button className="return-btn" onClick={handleReturnToMarketplace}>
+              🍽️ Return to Marketplace
+            </button>
+          </div>
+        )}
+
+        {/* Finalize: Success */}
+        {uiStep === 'success' && (
           <div className="success-message">
             <div className="success-icon">✅</div>
             <h2>Perfect! Your Au Gratin is Ready!</h2>
@@ -580,11 +554,17 @@ function AugratinOAuthSkipHsAuthPage() {
               </div>
             )}
 
-            {oauthCode && !portalId && (
+            {selectedTier && TIER_CONFIGS[selectedTier].optionalScopes.length > 0 && (
               <div className="oauth-code-display">
-                <h3>🔑 OAuth Authorization Code</h3>
-                <code className="code-block">{oauthCode}</code>
-                <p className="code-hint">Tokens saved successfully</p>
+                <h3>✨ Optional Scopes</h3>
+                <code className="code-block">{TIER_CONFIGS[selectedTier].optionalScopes.join(' ')}</code>
+              </div>
+            )}
+
+            {selectedTier && TIER_CONFIGS[selectedTier].conditionalScopes.length > 0 && (
+              <div className="oauth-code-display">
+                <h3>🔀 Conditional Scopes</h3>
+                <code className="code-block">{TIER_CONFIGS[selectedTier].conditionalScopes.join(' ')}</code>
               </div>
             )}
 
@@ -598,4 +578,4 @@ function AugratinOAuthSkipHsAuthPage() {
   );
 }
 
-export default AugratinOAuthSkipHsAuthPage;
+export default AugratinOAuthPage;

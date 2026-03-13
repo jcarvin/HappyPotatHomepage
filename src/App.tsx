@@ -7,7 +7,7 @@ import Footer from './components/Footer';
 import { LoginPage } from './pages/LoginPage';
 import { ProfilePage } from './pages/ProfilePage';
 import OAuthPage from './pages/OAuthPage';
-import AugratinOAuthSkipHsAuthPage from './pages/AugratinOAuthSkipHsAuthPage';
+import AugratinOAuthPage from './pages/AugratinOAuthPage';
 import InstaPotatOAuthPage from './pages/InstaPotatOAuthPage';
 import LoadedPotatOAuthPage from './pages/LoadedPotatOAuthPage';
 import LoadedPotatMCPPage from './pages/LoadedPotatMCPPage';
@@ -57,7 +57,7 @@ function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/profile" element={<ProfilePage />} />
       <Route path="/oauth" element={<OAuthPage />} />
-      <Route path="/augratin-oauth/skip-hs-auth" element={<AugratinOAuthSkipHsAuthPage />} />
+      <Route path="/augratin-oauth" element={<AugratinOAuthPage />} />
       <Route path="/augratin-oauth/with-hs-auth" element={<OAuthPage />} />
       <Route path="/insta-potat/no-auth" element={<InstaPotatOAuthPage />} />
       <Route path="/loaded-potat-oauth" element={<LoadedPotatOAuthPage />} />
