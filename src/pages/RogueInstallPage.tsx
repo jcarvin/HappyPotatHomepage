@@ -20,7 +20,7 @@ const ROGUE_CLIENT_ID = '28fa7af7-4f36-46c8-87ff-572c0696e8d9';
 const ROGUE_SCOPES = 'settings.users.read oauth crm.objects.contacts.read';
 const ROGUE_HS_AUTHORIZE_URL = 'https://app.hubspotqa.com/oauth/authorize';
 
-const CLIENT_SECRET = import.meta.env.VITE_TATER_CLIENT_SECRET;
+const CLIENT_SECRET = import.meta.env.VITE_HUBSPOT_CLIENT_SECRET;
 
 function getRogueRedirectUri(): string {
   return `${window.location.origin}/rogue-install?step=finalize`;
