@@ -6,12 +6,12 @@
  *
  * Flow:
  * 1. (no step): User authenticates with Supabase
- * 2. After auth: Creates PKCE state token, redirects to HubSpot QA OAuth authorize URL
+ * 2. After auth: Creates state token, redirects to HubSpot QA OAuth authorize URL
  * 3. step=finalize: HubSpot redirects back with code + state; validates state, exchanges code for tokens
  */
 
 import { useEffect, useState, useRef } from 'react';
-import { loginUser, registerUser, createOAuthState, consumeOAuthState, generateCodeVerifier, generateCodeChallenge } from '../lib/auth';
+import { loginUser, registerUser, createOAuthState, consumeOAuthState } from '../lib/auth';
 import { useAuth } from '../hooks/useAuth';
 import { exchangeCodeForToken } from '../lib/hubspotOAuth';
 import './OAuthPage.css';
@@ -89,17 +89,17 @@ function RogueInstallPage() {
       return;
     }
 
-    const { userId, codeVerifier, error: stateError } = await consumeOAuthState(state);
+    const { userId, error: stateError } = await consumeOAuthState(state);
 
     if (stateError || !userId) {
       showError(`🚨 State validation failed: ${stateError || 'Invalid state token'}. Session may be expired.`);
       return;
     }
 
-    await handleExchangeCodeForToken(code, userId, codeVerifier ?? undefined);
+    await handleExchangeCodeForToken(code, userId);
   }
 
-  async function handleExchangeCodeForToken(code: string, userId?: string, codeVerifier?: string): Promise<void> {
+  async function handleExchangeCodeForToken(code: string, userId?: string): Promise<void> {
     setShowWelcome(true);
     setShowForm(false);
     setWelcomeMessage('🔄 Exchanging authorization code for tokens...');
@@ -112,7 +112,6 @@ function RogueInstallPage() {
         clientSecret: CLIENT_SECRET!,
         redirectUri: getRogueRedirectUri(),
         userId,
-        codeVerifier,
       });
 
       if (!result.success) {
@@ -133,10 +132,7 @@ function RogueInstallPage() {
   async function handleAuthorizeSubmit(): Promise<void> {
     setButtonText('🔐 Creating secure state token...');
 
-    const codeVerifier = generateCodeVerifier();
-    const codeChallenge = await generateCodeChallenge(codeVerifier);
-
-    const { stateToken, error: stateError } = await createOAuthState(10, codeVerifier);
+    const { stateToken, error: stateError } = await createOAuthState(10);
 
     if (stateError || !stateToken) {
       showError(`🚨 Failed to create state token: ${stateError}`);
@@ -165,8 +161,6 @@ function RogueInstallPage() {
       authUrl.searchParams.set('redirect_uri', getRogueRedirectUri());
       authUrl.searchParams.set('scope', ROGUE_SCOPES);
       authUrl.searchParams.set('state', stateToken);
-      authUrl.searchParams.set('code_challenge', codeChallenge);
-      authUrl.searchParams.set('code_challenge_method', 'S256');
 
       window.location.href = authUrl.toString();
     }, 3000);
