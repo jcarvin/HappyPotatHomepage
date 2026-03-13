@@ -337,7 +337,7 @@ function AugratinOAuthPage() {
       }
 
       if (tierConfig.optionalScopes.length > 0) {
-        url.searchParams.set('optionalScope', tierConfig.optionalScopes.join(' '));
+        url.searchParams.set('optional_scope', tierConfig.optionalScopes.join(' '));
       }
 
       url.searchParams.set('state', stateToken);
