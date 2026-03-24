@@ -22,6 +22,14 @@ const ROGUE_HS_AUTHORIZE_URL = 'https://app.hubspotqa.com/oauth/authorize';
 
 const CLIENT_SECRET = import.meta.env.VITE_HUBSPOT_CLIENT_SECRET;
 
+const ROGUE_INSTALL_REDIRECT_FLAG = 'rogueInstall_shouldRedirect';
+const ROGUE_INSTALL_RETURN_URL = 'rogueInstall_returnUrl';
+
+function clearRogueInstallRedirectStorage(): void {
+  sessionStorage.removeItem(ROGUE_INSTALL_REDIRECT_FLAG);
+  sessionStorage.removeItem(ROGUE_INSTALL_RETURN_URL);
+}
+
 function getRogueRedirectUri(): string {
   return `${window.location.origin}/rogue-install?step=finalize`;
 }
@@ -45,6 +53,7 @@ function RogueInstallPage() {
   const [showWelcome, setShowWelcome] = useState(false);
   const [welcomeMessage, setWelcomeMessage] = useState('');
   const [showForm, setShowForm] = useState(true);
+  const [redirectAfterHubSpot, setRedirectAfterHubSpot] = useState(false);
 
   useEffect(() => {
     if (!buttonDisabled) {
@@ -115,26 +124,78 @@ function RogueInstallPage() {
       });
 
       if (!result.success) {
+        clearRogueInstallRedirectStorage();
         showError(`🚨 Token exchange failed: ${result.error}`);
         return;
       }
 
       setShowForm(false);
-      setWelcomeMessage(
-        `🎉 Rogue install complete! Portal ${result.portalId || 'Unknown'}<br>✅ Tokens stored under the Tater app.`
-      );
+      const successHtml = `🎉 Rogue install complete! Portal ${result.portalId || 'Unknown'}<br>✅ Tokens stored under the Tater app.`;
+      setWelcomeMessage(successHtml);
       setShowWelcome(true);
+
+      const shouldRedirect = sessionStorage.getItem(ROGUE_INSTALL_REDIRECT_FLAG) === 'true';
+      const storedReturnUrl = sessionStorage.getItem(ROGUE_INSTALL_RETURN_URL);
+      if (shouldRedirect && storedReturnUrl) {
+        try {
+          new URL(storedReturnUrl);
+          clearRogueInstallRedirectStorage();
+          setWelcomeMessage(`${successHtml}<br>🚀 Redirecting back to HubSpot…`);
+          setTimeout(() => {
+            window.location.href = storedReturnUrl;
+          }, 1000);
+          return;
+        } catch {
+          clearRogueInstallRedirectStorage();
+        }
+      } else {
+        clearRogueInstallRedirectStorage();
+      }
     } catch (error) {
+      clearRogueInstallRedirectStorage();
       showError(`🚨 Token exchange error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
   async function handleAuthorizeSubmit(): Promise<void> {
+    if (!redirectAfterHubSpot) {
+      clearRogueInstallRedirectStorage();
+    } else {
+      const returnUrl = getQueryParam('returnUrl');
+      if (!returnUrl) {
+        hasProcessedAuth.current = false;
+        setWaitingForAuth(false);
+        setButtonDisabled(false);
+        setButtonText(authMode === 'login' ? '🔓 Begin Rogue Install' : '🌱 Create Account');
+        showError(
+          '🚨 Missing returnUrl. Add returnUrl to the page URL when redirect-after-install is enabled.'
+        );
+        return;
+      }
+      try {
+        new URL(returnUrl);
+      } catch {
+        hasProcessedAuth.current = false;
+        setWaitingForAuth(false);
+        setButtonDisabled(false);
+        setButtonText(authMode === 'login' ? '🔓 Begin Rogue Install' : '🌱 Create Account');
+        showError('🚨 Invalid returnUrl query parameter.');
+        return;
+      }
+      sessionStorage.setItem(ROGUE_INSTALL_REDIRECT_FLAG, 'true');
+      sessionStorage.setItem(ROGUE_INSTALL_RETURN_URL, returnUrl);
+    }
+
     setButtonText('🔐 Creating secure state token...');
 
     const { stateToken, error: stateError } = await createOAuthState(10);
 
     if (stateError || !stateToken) {
+      clearRogueInstallRedirectStorage();
+      hasProcessedAuth.current = false;
+      setWaitingForAuth(false);
+      setButtonDisabled(false);
+      setButtonText(authMode === 'login' ? '🔓 Begin Rogue Install' : '🌱 Create Account');
       showError(`🚨 Failed to create state token: ${stateError}`);
       return;
     }
@@ -350,6 +411,16 @@ function RogueInstallPage() {
           color: #e94560;
         }
 
+        .rogue-page .toggle-text {
+          color: #a8b2d8 !important;
+        }
+
+        .rogue-return-url-hint {
+          color: #a8b2d8;
+          margin-top: 8px;
+          font-size: 0.9rem;
+        }
+
         .floating-rogue {
           position: absolute;
           font-size: 2rem;
@@ -427,6 +498,24 @@ function RogueInstallPage() {
                   minLength={6}
                   disabled={buttonDisabled}
                 />
+              </div>
+
+              <div className="form-group">
+                <label className="toggle-label" htmlFor="rogue-redirect-after-install">
+                  <input
+                    type="checkbox"
+                    id="rogue-redirect-after-install"
+                    checked={redirectAfterHubSpot}
+                    onChange={(e) => setRedirectAfterHubSpot(e.target.checked)}
+                    disabled={buttonDisabled}
+                  />
+                  <span className="toggle-text">Redirect to HubSpot after install complete</span>
+                </label>
+                {redirectAfterHubSpot && (
+                  <p className="rogue-return-url-hint">
+                    Add <code style={{ color: '#e6f1ff' }}>returnUrl</code> to this page&apos;s URL.
+                  </p>
+                )}
               </div>
 
               <div className="potato-divider">🕵️ • ⚡ • 🔓</div>
