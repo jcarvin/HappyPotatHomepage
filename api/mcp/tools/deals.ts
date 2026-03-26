@@ -21,6 +21,7 @@ import {
   createErrorResult,
   formatHubSpotObject,
   formatSearchResults,
+  hubspotRequired,
   HUBSPOT_API_BASE,
 } from '../../../lib/mcp/types.js';
 
@@ -60,9 +61,14 @@ export const createDealTool: MCPTool = {
 
 export async function executeCreateDeal(
   params: any,
-  accessToken: string
+  accessToken: string | undefined
 ): Promise<MCPToolResult> {
   try {
+    const missingHub = hubspotRequired(accessToken);
+    if (missingHub) {
+      return missingHub;
+    }
+
     if (!params.dealname || typeof params.dealname !== 'string') {
       return createErrorResult('dealname is required and must be a string');
     }
@@ -160,9 +166,14 @@ export const updateDealTool: MCPTool = {
 
 export async function executeUpdateDeal(
   params: any,
-  accessToken: string
+  accessToken: string | undefined
 ): Promise<MCPToolResult> {
   try {
+    const missingHub = hubspotRequired(accessToken);
+    if (missingHub) {
+      return missingHub;
+    }
+
     if (!params.dealId) {
       return createErrorResult('dealId is required');
     }
@@ -237,9 +248,14 @@ export const getDealTool: MCPTool = {
 
 export async function executeGetDeal(
   params: any,
-  accessToken: string
+  accessToken: string | undefined
 ): Promise<MCPToolResult> {
   try {
+    const missingHub = hubspotRequired(accessToken);
+    if (missingHub) {
+      return missingHub;
+    }
+
     if (!params.dealId) {
       return createErrorResult('dealId is required');
     }
@@ -323,9 +339,14 @@ export const searchDealsTool: MCPTool = {
 
 export async function executeSearchDeals(
   params: any,
-  accessToken: string
+  accessToken: string | undefined
 ): Promise<MCPToolResult> {
   try {
+    const missingHub = hubspotRequired(accessToken);
+    if (missingHub) {
+      return missingHub;
+    }
+
     // Build filter groups
     const filterGroups: any[] = [];
     
@@ -445,9 +466,14 @@ export const associateContactDealTool: MCPTool = {
 
 export async function executeAssociateContactDeal(
   params: any,
-  accessToken: string
+  accessToken: string | undefined
 ): Promise<MCPToolResult> {
   try {
+    const missingHub = hubspotRequired(accessToken);
+    if (missingHub) {
+      return missingHub;
+    }
+
     if (!params.contactId) {
       return createErrorResult('contactId is required');
     }

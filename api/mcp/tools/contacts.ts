@@ -21,6 +21,7 @@ import {
   createErrorResult,
   formatHubSpotObject,
   formatSearchResults,
+  hubspotRequired,
   HUBSPOT_API_BASE,
 } from '../../../lib/mcp/types.js';
 
@@ -68,9 +69,14 @@ export const createContactTool: MCPTool = {
 
 export async function executeCreateContact(
   params: any,
-  accessToken: string
+  accessToken: string | undefined
 ): Promise<MCPToolResult> {
   try {
+    const missingHub = hubspotRequired(accessToken);
+    if (missingHub) {
+      return missingHub;
+    }
+
     // Validate email
     if (!params.email || typeof params.email !== 'string') {
       return createErrorResult('Email is required and must be a valid string');
@@ -156,9 +162,14 @@ export const updateContactTool: MCPTool = {
 
 export async function executeUpdateContact(
   params: any,
-  accessToken: string
+  accessToken: string | undefined
 ): Promise<MCPToolResult> {
   try {
+    const missingHub = hubspotRequired(accessToken);
+    if (missingHub) {
+      return missingHub;
+    }
+
     if (!params.contactId) {
       return createErrorResult('contactId is required');
     }
@@ -233,9 +244,14 @@ export const getContactTool: MCPTool = {
 
 export async function executeGetContact(
   params: any,
-  accessToken: string
+  accessToken: string | undefined
 ): Promise<MCPToolResult> {
   try {
+    const missingHub = hubspotRequired(accessToken);
+    if (missingHub) {
+      return missingHub;
+    }
+
     if (!params.contactId) {
       return createErrorResult('contactId is required');
     }
@@ -315,9 +331,14 @@ export const searchContactsTool: MCPTool = {
 
 export async function executeSearchContacts(
   params: any,
-  accessToken: string
+  accessToken: string | undefined
 ): Promise<MCPToolResult> {
   try {
+    const missingHub = hubspotRequired(accessToken);
+    if (missingHub) {
+      return missingHub;
+    }
+
     // Build filter groups
     const filterGroups: any[] = [];
     
@@ -417,9 +438,14 @@ export const listContactPropertiesTool: MCPTool = {
 
 export async function executeListContactProperties(
   params: any,
-  accessToken: string
+  accessToken: string | undefined
 ): Promise<MCPToolResult> {
   try {
+    const missingHub = hubspotRequired(accessToken);
+    if (missingHub) {
+      return missingHub;
+    }
+
     const response = await fetch(`${HUBSPOT_API_BASE}/crm/v3/properties/contacts`, {
       method: 'GET',
       headers: {

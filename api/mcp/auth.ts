@@ -1,16 +1,14 @@
 /**
  * MCP Authentication Middleware (SIMPLIFIED for Marketplace App)
- * 
+ *
  * Validates incoming MCP requests from HubSpot Breeze agents.
- * 
- * Simplified Flow (Marketplace App):
+ *
+ * Flow:
  * 1. Extract Bearer token from Authorization header
- * 2. Validate token exists and hasn't expired
- * 3. Get HubSpot API credentials from app installation
- * 4. Return context with HubSpot access token
- * 
- * Note: Portal context comes from app installation, not OAuth flow.
- * HubSpot UnifiedAuth handles portal-to-token mapping internally.
+ * 2. Validate token exists and hasn't expired (`mcp_user_registrations`)
+ * 3. Optionally load HubSpot API credentials from `app_tokens` (Loaded Potat install)
+ * 4. Return context — `hubspotAccessToken` is omitted when no app install row exists;
+ *    CRM tools fail with a clear message; non-CRM tools (e.g. get_potat_fixins) still work.
  */
 
 import { createClient } from '@supabase/supabase-js';
@@ -25,9 +23,10 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.en
  * Contains HubSpot access token for calling CRM APIs
  */
 export interface MCPAuthContext {
-  hubspotAccessToken: string;
+  /** Present when Loaded Potat is installed and `app_tokens` has a row for this portal/session. */
+  hubspotAccessToken?: string;
   mcpScopes: string[];
-  portalId?: string; // Optional: if we can extract from app installation
+  portalId?: string;
   registrationId: string; // mcp_user_registrations.id — identifies the connected user
 }
 
@@ -145,29 +144,44 @@ export async function validateMCPRequest(
   const { data: appToken, error: tokenError } = await query
     .order('created_at', { ascending: false })
     .limit(1)
-    .single();
+    .maybeSingle();
 
-  if (tokenError || !appToken) {
-    console.error('HubSpot app tokens not found:', {
+  if (tokenError) {
+    console.error('HubSpot app_tokens query failed:', {
       error: tokenError,
       target_portal: targetPortalId,
       has_registration_portal: !!registration.hubspot_portal_id
     });
-    
-    const errorMsg = targetPortalId 
-      ? `No HubSpot credentials found for portal ${targetPortalId}. The Loaded Potat app must be installed in this portal.`
-      : 'No HubSpot credentials found. The Loaded Potat app must be installed first.';
-    
     return {
       success: false,
-      error: errorMsg
+      error: 'Could not load HubSpot app credentials. Try again or reinstall the Loaded Potat app.'
+    };
+  }
+
+  if (!appToken) {
+    console.warn('MCP session has no HubSpot app_tokens row — CRM tools unavailable until Loaded Potat is installed.', {
+      target_portal: targetPortalId,
+      has_registration_portal: !!registration.hubspot_portal_id
+    });
+    return {
+      success: true,
+      context: {
+        mcpScopes: registration.scopes,
+        portalId: registration.hubspot_portal_id ?? undefined,
+        registrationId: registration.id
+      }
     };
   }
 
   if (!appToken.access_token) {
+    console.warn('app_tokens row exists but access_token is empty — skipping HubSpot API.');
     return {
-      success: false,
-      error: 'HubSpot access token missing. Please reinstall the Loaded Potat app.'
+      success: true,
+      context: {
+        mcpScopes: registration.scopes,
+        portalId: registration.hubspot_portal_id ?? appToken.user_id,
+        registrationId: registration.id
+      }
     };
   }
 

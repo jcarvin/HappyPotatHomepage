@@ -69,10 +69,11 @@ export interface MCPToolResult {
 
 /**
  * Tool execution function signature
+ * `accessToken` is undefined when Loaded Potat is not installed / no `app_tokens` row.
  */
 export type ToolExecutor = (
   params: any,
-  accessToken: string
+  accessToken: string | undefined
 ) => Promise<MCPToolResult>;
 
 /**
@@ -167,6 +168,19 @@ export function createErrorResult(errorMessage: string, details?: any): MCPToolR
     }],
     isError: true,
   };
+}
+
+/**
+ * CRM tools must call this first; returns an error result if HubSpot is not connected.
+ */
+export function hubspotRequired(accessToken: string | undefined): MCPToolResult | null {
+  if (!accessToken) {
+    return createErrorResult(
+      'HubSpot credentials are not available for this MCP session. Install the Loaded Potat app in your portal ' +
+        '(and ensure tokens are stored) to use CRM tools, or pass X-HubSpot-Portal-Id if your client supports it.'
+    );
+  }
+  return null;
 }
 
 /**

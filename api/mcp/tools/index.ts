@@ -150,13 +150,13 @@ export function getAllTools(): MCPTool[] {
  * 
  * @param toolName - Name of the tool to execute
  * @param params - Parameters to pass to the tool
- * @param accessToken - HubSpot API access token
+ * @param accessToken - HubSpot API access token (undefined if app not installed)
  * @returns Tool execution result
  */
 export async function executeTool(
   toolName: string,
   params: Record<string, unknown>,
-  accessToken: string
+  accessToken: string | undefined
 ): Promise<MCPToolResult> {
   const tool = toolRegistry[toolName];
   
