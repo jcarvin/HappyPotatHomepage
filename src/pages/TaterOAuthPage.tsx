@@ -42,6 +42,7 @@ function TaterOAuthPage() {
   const [showWelcome, setShowWelcome] = useState(false);
   const [welcomeMessage, setWelcomeMessage] = useState('');
   const [showForm, setShowForm] = useState(true);
+  const [sendPkceParams, setSendPkceParams] = useState(true);
 
   // Update button text when auth mode changes
   useEffect(() => {
@@ -184,8 +185,12 @@ function TaterOAuthPage() {
 
     setButtonText('🔐 Creating secure state token...');
 
-    const codeVerifier = generateCodeVerifier();
-    const codeChallenge = await generateCodeChallenge(codeVerifier);
+    let codeVerifier: string | undefined;
+    let codeChallenge: string | undefined;
+    if (sendPkceParams) {
+      codeVerifier = generateCodeVerifier();
+      codeChallenge = await generateCodeChallenge(codeVerifier);
+    }
 
     const { stateToken, error: stateError } = await createOAuthState(10, codeVerifier);
 
@@ -214,8 +219,10 @@ function TaterOAuthPage() {
 
       const returnUrlObj = new URL(returnUrl);
       returnUrlObj.searchParams.set('state', stateToken);
-      returnUrlObj.searchParams.set('code_challenge', codeChallenge);
-      returnUrlObj.searchParams.set('code_challenge_method', 'S256');
+      if (sendPkceParams && codeChallenge) {
+        returnUrlObj.searchParams.set('code_challenge', codeChallenge);
+        returnUrlObj.searchParams.set('code_challenge_method', 'S256');
+      }
       window.location.href = returnUrlObj.toString();
     }, 3000);
   }
@@ -403,6 +410,22 @@ function TaterOAuthPage() {
         .tater-page .link-btn:hover {
           color: #922b0c !important;
         }
+
+        .tater-page .pkce-toggle {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.5rem;
+          margin-bottom: 1rem;
+          font-size: 0.95rem;
+          color: #5c3317;
+        }
+
+        .tater-page .pkce-toggle input {
+          width: 1.1rem;
+          height: 1.1rem;
+          accent-color: #b7410e;
+        }
       `}</style>
       <div className="oauth-page tater-page">
         <div className="potato-bg">
@@ -426,6 +449,17 @@ function TaterOAuthPage() {
                   {authError}
                 </div>
               )}
+
+              <div className="pkce-toggle">
+                <input
+                  type="checkbox"
+                  id="sendPkceParams"
+                  checked={sendPkceParams}
+                  onChange={(e) => setSendPkceParams(e.target.checked)}
+                  disabled={buttonDisabled}
+                />
+                <label htmlFor="sendPkceParams">Send PKCE params</label>
+              </div>
 
               <div className="form-group">
                 <label htmlFor="email">📧 Email:</label>
