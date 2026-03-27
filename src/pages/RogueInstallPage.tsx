@@ -6,12 +6,12 @@
  *
  * Flow:
  * 1. (no step): User authenticates with Supabase
- * 2. After auth: Creates state token, redirects to HubSpot QA OAuth authorize URL
- * 3. step=finalize: HubSpot redirects back with code + state; validates state, exchanges code for tokens
+ * 2. After auth: Redirects to HubSpot QA OAuth authorize URL
+ * 3. step=finalize: HubSpot redirects back with code; exchanges code for tokens
  */
 
 import { useEffect, useState, useRef } from 'react';
-import { loginUser, registerUser, createOAuthState, consumeOAuthState } from '../lib/auth';
+import { loginUser, registerUser } from '../lib/auth';
 import { useAuth } from '../hooks/useAuth';
 import { exchangeCodeForToken } from '../lib/hubspotOAuth';
 import './OAuthPage.css';
@@ -80,35 +80,22 @@ function RogueInstallPage() {
   function initializeApp(): void {
     const step = getQueryParam('step') as OAuthStep | null;
     const code = getQueryParam('code');
-    const state = getQueryParam('state');
 
     if (step === 'finalize') {
-      handleFinalizeStep(code, state);
+      handleFinalizeStep(code);
     }
   }
 
-  async function handleFinalizeStep(code: string | null, state: string | null): Promise<void> {
+  async function handleFinalizeStep(code: string | null): Promise<void> {
     if (!code) {
       showError('🚨 Missing authorization code. The rogue install lost its code in transit!');
       return;
     }
 
-    if (!state) {
-      showError('🚨 Missing state parameter. The rogue install has been compromised!');
-      return;
-    }
-
-    const { userId, error: stateError } = await consumeOAuthState(state);
-
-    if (stateError || !userId) {
-      showError(`🚨 State validation failed: ${stateError || 'Invalid state token'}. Session may be expired.`);
-      return;
-    }
-
-    await handleExchangeCodeForToken(code, userId);
+    await handleExchangeCodeForToken(code);
   }
 
-  async function handleExchangeCodeForToken(code: string, userId?: string): Promise<void> {
+  async function handleExchangeCodeForToken(code: string): Promise<void> {
     setShowWelcome(true);
     setShowForm(false);
     setWelcomeMessage('🔄 Exchanging authorization code for tokens...');
@@ -120,7 +107,6 @@ function RogueInstallPage() {
         clientId: ROGUE_CLIENT_ID,
         clientSecret: CLIENT_SECRET!,
         redirectUri: getRogueRedirectUri(),
-        userId,
       });
 
       if (!result.success) {
@@ -186,20 +172,6 @@ function RogueInstallPage() {
       sessionStorage.setItem(ROGUE_INSTALL_RETURN_URL, returnUrl);
     }
 
-    setButtonText('🔐 Creating secure state token...');
-
-    const { stateToken, error: stateError } = await createOAuthState(10);
-
-    if (stateError || !stateToken) {
-      clearRogueInstallRedirectStorage();
-      hasProcessedAuth.current = false;
-      setWaitingForAuth(false);
-      setButtonDisabled(false);
-      setButtonText(authMode === 'login' ? '🔓 Begin Rogue Install' : '🌱 Create Account');
-      showError(`🚨 Failed to create state token: ${stateError}`);
-      return;
-    }
-
     const loadingMessages = [
       '🔒 Securing rogue credentials...',
       '🎫 Preparing authorization token...',
@@ -221,7 +193,6 @@ function RogueInstallPage() {
       authUrl.searchParams.set('client_id', ROGUE_CLIENT_ID);
       authUrl.searchParams.set('redirect_uri', getRogueRedirectUri());
       authUrl.searchParams.set('scope', ROGUE_SCOPES);
-      authUrl.searchParams.set('state', stateToken);
 
       window.location.href = authUrl.toString();
     }, 3000);
