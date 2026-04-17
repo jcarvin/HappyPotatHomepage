@@ -236,6 +236,10 @@
   opacity: 0.7;
 }
 
+.oauth-page .form-group .toggle-label + .toggle-label {
+  margin-top: 0.75rem;
+}
+
 .oauth-page .toggle-label {
   display: flex !important;
   align-items: center;

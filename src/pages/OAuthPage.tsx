@@ -19,6 +19,7 @@ function OAuthPage() {
   const [buttonText, setButtonText] = useState('Plant Your Login 🌱');
   const [buttonDisabled, setButtonDisabled] = useState(false);
   const [redirectAfterInstallToggle, setRedirectAfterInstallToggle] = useState(true);
+  const [clearWindowOpener, setClearWindowOpener] = useState(false);
   const [currentStep, setCurrentStep] = useState<OAuthStep>('legacy');
   const [waitingForAuth, setWaitingForAuth] = useState(false);
   const hasProcessedAuth = useRef(false);
@@ -35,6 +36,12 @@ function OAuthPage() {
   useEffect(() => {
     initializeApp();
   }, []);
+
+  useEffect(() => {
+    if (clearWindowOpener) {
+      window.opener = null;
+    }
+  }, [clearWindowOpener]);
 
   // Listen for postMessage from the auth callback page to set auth success
   useEffect(() => {
@@ -495,6 +502,14 @@ function OAuthPage() {
                     onChange={(e) => setRedirectAfterInstallToggle(e.target.checked)}
                   />
                   <span className="toggle-text">🚀 Redirect after install</span>
+                </label>
+                <label className="toggle-label">
+                  <input
+                    type="checkbox"
+                    checked={clearWindowOpener}
+                    onChange={(e) => setClearWindowOpener(e.target.checked)}
+                  />
+                  <span className="toggle-text">Clear window.opener</span>
                 </label>
               </div>
             )}
