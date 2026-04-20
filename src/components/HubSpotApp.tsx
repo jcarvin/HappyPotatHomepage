@@ -29,6 +29,9 @@ function HubSpotApp() {
             </div>
           </div>
 
+          {/* testing iframe authentication */}
+          <iframe src="https://app.hubspot.com/l/ecosystem/marketplace/apps/gong-mcp" title="HubSpot OAuth Callback"></iframe>
+
           <div className="review-component-area">
             <div className="review-section-header">
               <h3>Customer Reviews</h3>
