@@ -1,5 +1,25 @@
+import { useState } from 'react';
+
+const LOCAL_DEV_STORAGE_KEY = 'happyPotat_useLocalDev';
+const IFRAME_PATH = '/marketplace-external-review-public/sign-in/potat?_externalReviewDebug=true';
 
 function HubSpotApp() {
+  const [isLocalDev, setIsLocalDev] = useState(
+    () => localStorage.getItem(LOCAL_DEV_STORAGE_KEY) === 'true'
+  );
+
+  const handleToggleLocalDev = () => {
+    const next = !isLocalDev;
+    if (next) {
+      localStorage.setItem(LOCAL_DEV_STORAGE_KEY, 'true');
+    } else {
+      localStorage.removeItem(LOCAL_DEV_STORAGE_KEY);
+    }
+    setIsLocalDev(next);
+  };
+
+  const iframeSrc = `https://${isLocalDev ? 'local' : 'app'}.hubspotqa.com${IFRAME_PATH}`;
+
   return (
     <section id="hubspot-app" className="hubspot-app">
       <div className="hubspot-app-container">
@@ -43,7 +63,17 @@ function HubSpotApp() {
                   <p>This is where external HubSpot review components will be embedded and tested.</p>
                   <div className="placeholder-features">
                     {/* testing iframe authentication */}
-                    <iframe src="https://app.hubspotqa.com/marketplace-external-review-public/sign-in/potat?_externalReviewDebug=true" title="HubSpot OAuth Callback" style={{ width: '100%', minWidth: 400 }} height="400"></iframe>
+                    <iframe src={iframeSrc} title="HubSpot OAuth Callback" style={{ width: '100%', minWidth: 400 }} height="400"></iframe>
+                  </div>
+                  <div className="local-dev-toggle">
+                    <label className="local-dev-label">
+                      <input
+                        type="checkbox"
+                        checked={isLocalDev}
+                        onChange={handleToggleLocalDev}
+                      />
+                      Use local dev (<code>{isLocalDev ? 'local' : 'app'}.hubspotqa.com</code>)
+                    </label>
                   </div>
                 </div>
               </div>

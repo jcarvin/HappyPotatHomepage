@@ -437,6 +437,34 @@ body {
   margin: 0.25rem;
 }
 
+.local-dev-toggle {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #e0d8cc;
+}
+
+.local-dev-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: #666;
+  cursor: pointer;
+  user-select: none;
+}
+
+.local-dev-label input[type='checkbox'] {
+  cursor: pointer;
+}
+
+.local-dev-label code {
+  background: #f0ebe3;
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+  font-size: 0.8rem;
+  color: #8B4513;
+}
+
 /* Footer */
 .footer {
   background: #8B4513;
