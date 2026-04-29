@@ -29,9 +29,6 @@ function HubSpotApp() {
             </div>
           </div>
 
-          {/* testing iframe authentication */}
-          <iframe src="https://app.hubspotqa.com/marketplace-external-review-public/sign-in/potat?_externalReviewDebug=true" title="HubSpot OAuth Callback"></iframe>
-
           <div className="review-component-area">
             <div className="review-section-header">
               <h3>Customer Reviews</h3>
@@ -43,11 +40,10 @@ function HubSpotApp() {
               <div className="placeholder-review-component">
                 <div className="placeholder-content">
                   <h4>🔧 Review Component Testing Area</h4>
-                  <p>This is where your external HubSpot review components will be embedded and tested.</p>
+                  <p>This is where external HubSpot review components will be embedded and tested.</p>
                   <div className="placeholder-features">
-                    <span className="placeholder-feature">⭐ Review Collection</span>
-                    <span className="placeholder-feature">📝 Review Display</span>
-                    <span className="placeholder-feature">📊 Review Analytics</span>
+                    {/* testing iframe authentication */}
+                    <iframe src="https://app.hubspotqa.com/marketplace-external-review-public/sign-in/potat?_externalReviewDebug=true" title="HubSpot OAuth Callback" width="400" height="400"></iframe>
                   </div>
                 </div>
               </div>
