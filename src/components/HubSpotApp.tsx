@@ -55,28 +55,19 @@ function HubSpotApp() {
               <p>See what our customers are saying about Happy Potat :)</p>
             </div>
 
-            {/* This is where you'll embed your external review components */}
-            <div className="review-component-container">
-              <div className="placeholder-review-component">
-                <div className="placeholder-content">
-                  <h4>🔧 Review Component Testing Area</h4>
-                  <p>This is where external HubSpot review components will be embedded and tested.</p>
-                  <div className="placeholder-features">
-                    {/* testing iframe authentication */}
-                    <iframe src={iframeSrc} title="HubSpot OAuth Callback" style={{ width: '100%', minWidth: 400 }} height="400"></iframe>
-                  </div>
-                  <div className="local-dev-toggle">
-                    <label className="local-dev-label">
-                      <input
-                        type="checkbox"
-                        checked={isLocalDev}
-                        onChange={handleToggleLocalDev}
-                      />
-                      Use local dev (<code>{isLocalDev ? 'local' : 'app'}.hubspotqa.com</code>)
-                    </label>
-                  </div>
-                </div>
-              </div>
+            <div className="placeholder-features">
+              {/* testing iframe authentication */}
+              <iframe src={iframeSrc} title="HubSpot OAuth Callback" style={{ width: '100%', minWidth: 400 }} height="400"></iframe>
+            </div>
+            <div className="local-dev-toggle">
+              <label className="local-dev-label">
+                <input
+                  type="checkbox"
+                  checked={isLocalDev}
+                  onChange={handleToggleLocalDev}
+                />
+                Use local dev (<code>{isLocalDev ? 'local' : 'app'}.hubspotqa.com</code>)
+              </label>
             </div>
           </div>
         </div>
