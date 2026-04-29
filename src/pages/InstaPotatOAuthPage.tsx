@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import Header from '../components/Header';
 import { getAppConfig } from '../lib/appConfig';
-import { fetchAccountInfo } from '../lib/hubspotOAuth';
+import { exchangeCodeForToken } from '../lib/hubspotOAuth';
 import './InstaPotatOAuthPage.css';
 
 const INSTAPOTAT_CONFIG = getAppConfig('instapotat');
@@ -64,45 +64,29 @@ function InstaPotatOAuthPage() {
     }
 
     try {
-      // Step 1: Exchange code for token
       setStatusMessage('🔄 Exchanging code for access token...');
 
-      const response = await fetch('/api/refresh-hubspot-token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          grant_type: 'authorization_code',
-          code,
-          client_id: INSTAPOTAT_CONFIG.clientId,
-          client_secret: INSTAPOTAT_CONFIG.clientSecret,
-          redirect_uri: INSTAPOTAT_CONFIG.redirectUri,
-        })
+      const result = await exchangeCodeForToken({
+        code,
+        appName: 'instapotat',
+        clientId: INSTAPOTAT_CONFIG.clientId,
+        clientSecret: INSTAPOTAT_CONFIG.clientSecret,
+        redirectUri: INSTAPOTAT_CONFIG.redirectUri,
+        skipDbSave: true,
       });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(`Token exchange failed: ${response.status} ${errorData.error || JSON.stringify(errorData)}`);
+      if (!result.success || !result.accessToken) {
+        throw new Error(result.error || 'No access token received from HubSpot');
       }
 
-      const data = await response.json();
-
-      if (!data.access_token) {
-        throw new Error('No access token received from HubSpot');
-      }
-
-      setStatusMessage('📋 Fetching account information...');
-      const accountData = await fetchAccountInfo(data.access_token);
-
-      if (!accountData.portalId) {
+      if (!result.portalId) {
         throw new Error('No portal ID found in account data');
       }
 
-      localStorage.setItem('instapotat_access_token', data.access_token);
-      localStorage.setItem('instapotat_portal_id', accountData.portalId);
+      localStorage.setItem('instapotat_access_token', result.accessToken);
+      localStorage.setItem('instapotat_portal_id', result.portalId);
 
-      setStatusMessage(`🎉 InstaPotat installed successfully for Portal ${accountData.portalId}!`);
+      setStatusMessage(`🎉 InstaPotat installed successfully for Portal ${result.portalId}!`);
       setIsProcessing(false);
 
       setTimeout(() => {

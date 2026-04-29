@@ -9,6 +9,7 @@ export interface TokenExchangeOptions {
   redirectUri: string;
   userId?: string; // Optional: if provided, saves to specific user without requiring auth session
   codeVerifier?: string; // Optional: PKCE code verifier
+  skipDbSave?: boolean; // Optional: if true, skip saving tokens to DB (for no-auth flows)
 }
 
 export interface TokenExchangeResult {
@@ -34,7 +35,7 @@ export interface AccountInfo {
  * CORS issues when calling HubSpot's token endpoint from the browser.
  */
 export async function exchangeCodeForToken(options: TokenExchangeOptions): Promise<TokenExchangeResult> {
-  const { code, appName, clientId, clientSecret, redirectUri, userId, codeVerifier } = options;
+  const { code, appName, clientId, clientSecret, redirectUri, userId, codeVerifier, skipDbSave } = options;
 
   try {
     const body: Record<string, string> = {
@@ -71,6 +72,17 @@ export async function exchangeCodeForToken(options: TokenExchangeOptions): Promi
       return {
         success: false,
         error: 'No access token received from HubSpot'
+      };
+    }
+
+    if (skipDbSave) {
+      const accountInfo = await fetchAccountInfo(data.access_token);
+      return {
+        success: true,
+        accessToken: data.access_token,
+        refreshToken: data.refresh_token,
+        expiresIn: data.expires_in,
+        portalId: accountInfo.portalId || undefined,
       };
     }
 
@@ -154,14 +166,17 @@ export async function exchangeCodeForToken(options: TokenExchangeOptions): Promi
 }
 
 /**
- * Fetch HubSpot account information using an access token
+ * Fetch HubSpot account information using an access token.
+ * Routes through /api/hubspot-token-info (server-side proxy) to avoid CORS issues.
  */
 export async function fetchAccountInfo(accessToken: string): Promise<AccountInfo> {
   try {
-    const response = await fetch('https://api.hubspotqa.com/account-info/v3/api-usage/daily', {
+    const response = await fetch('/api/hubspot-token-info', {
+      method: 'POST',
       headers: {
-        'Authorization': `Bearer ${accessToken}`
-      }
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ access_token: accessToken }),
     });
 
     if (!response.ok) {
@@ -171,11 +186,11 @@ export async function fetchAccountInfo(accessToken: string): Promise<AccountInfo
 
     const data = await response.json();
     return {
-      portalId: String(data.portalId),
-      hubId: data.hubId,
+      portalId: String(data.hub_id),
+      hubId: data.hub_id,
       timeZone: data.timeZone,
       accountType: data.accountType,
-      hubDomain: data.hubDomain
+      hubDomain: data.hub_domain,
     };
   } catch (error) {
     console.error('Error fetching account info:', error);
