@@ -30,7 +30,7 @@ function HubSpotApp() {
           </div>
 
           {/* testing iframe authentication */}
-          <iframe src="https://app.hubspot.com/marketplace/8508106/listing/gong-mcp" title="HubSpot OAuth Callback"></iframe>
+          <iframe src="https://app.hubspotqa.com/marketplace-external-review/886378183/potat" title="HubSpot OAuth Callback"></iframe>
 
           <div className="review-component-area">
             <div className="review-section-header">
