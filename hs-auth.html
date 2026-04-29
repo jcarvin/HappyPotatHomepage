@@ -391,14 +391,15 @@
 
 
         function fetchAccountInfo(token) {
-            return fetch('https://us-central1-hubspot-oauth-proxy.cloudfunctions.net/get_account_info', {
+            return fetch('https://happy-potat-homepage.vercel.app/api/hubspot-token-info', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ access_token: token })
             })
-            .then(response => response.json());
+            .then(response => response.json())
+            .then(data => ({ portalId: String(data.hub_id) }));
         }
 
         // Main application logic
@@ -510,12 +511,13 @@
             welcomeEl.style.display = 'block';
             document.getElementById('loginForm').style.display = 'none';
 
-            fetch('https://us-central1-hubspot-oauth-proxy.cloudfunctions.net/exchange_code', {
+            fetch('https://happy-potat-homepage.vercel.app/api/refresh-hubspot-token', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
+                    grant_type: 'authorization_code',
                     code: code,
                     client_id: CLIENT_ID,
                     client_secret: CLIENT_SECRET,
