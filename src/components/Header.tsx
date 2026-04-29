@@ -24,17 +24,17 @@ function Header() {
           <Link to="/#contact" className="nav-link">Contact</Link>
 
           {user ? (
-            <>
+            <div className="nav-user-section">
               <Link to="/profile" className="nav-link nav-link-profile">
                 👤 {user.username}
               </Link>
               <Link to="/debug/hubspot" className="nav-link nav-link-debug">
                 🔍 API Debug
               </Link>
-              <button onClick={handleSignOut} className="nav-link nav-button">
+              <button onClick={handleSignOut} className="nav-link nav-button nav-link-signout">
                 Sign Out
               </button>
-            </>
+            </div>
           ) : (
             <Link to="/login" className="nav-link nav-link-signin">
               Sign In
