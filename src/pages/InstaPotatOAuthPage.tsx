@@ -1,14 +1,10 @@
 import { useEffect, useState } from 'react';
 import Header from '../components/Header';
+import { getAppConfig } from '../lib/appConfig';
+import { fetchAccountInfo } from '../lib/hubspotOAuth';
 import './InstaPotatOAuthPage.css';
 
-const CLIENT_ID = import.meta.env.VITE_HUBSPOT_CLIENT_ID;
-const CLIENT_SECRET = import.meta.env.VITE_HUBSPOT_CLIENT_SECRET;
-const REDIRECT_URI = import.meta.env.VITE_HUBSPOT_REDIRECT_URI;
-
-interface AccountInfo {
-  portalId: string;
-}
+const INSTAPOTAT_CONFIG = getAppConfig('instapotat');
 
 function InstaPotatOAuthPage() {
   const [statusMessage, setStatusMessage] = useState('🥔 Preparing your InstaPotat...');
@@ -51,17 +47,6 @@ function InstaPotatOAuthPage() {
     return params.get(param);
   }
 
-  async function fetchAccountInfo(token: string): Promise<AccountInfo> {
-    const response = await fetch('https://us-central1-hubspot-oauth-proxy.cloudfunctions.net/get_account_info', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ access_token: token })
-    });
-    return response.json();
-  }
-
   async function handleInstallation(): Promise<void> {
     const code = getQueryParam('code');
     const returnUrl = getQueryParam('returnUrl');
@@ -82,18 +67,24 @@ function InstaPotatOAuthPage() {
       // Step 1: Exchange code for token
       setStatusMessage('🔄 Exchanging code for access token...');
 
-      const response = await fetch('https://us-central1-hubspot-oauth-proxy.cloudfunctions.net/exchange_code', {
+      const response = await fetch('/api/refresh-hubspot-token', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          code: code,
-          client_id: CLIENT_ID,
-          client_secret: CLIENT_SECRET,
-          redirect_uri: REDIRECT_URI
+          grant_type: 'authorization_code',
+          code,
+          client_id: INSTAPOTAT_CONFIG.clientId,
+          client_secret: INSTAPOTAT_CONFIG.clientSecret,
+          redirect_uri: INSTAPOTAT_CONFIG.redirectUri,
         })
       });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(`Token exchange failed: ${response.status} ${errorData.error || JSON.stringify(errorData)}`);
+      }
 
       const data = await response.json();
 
