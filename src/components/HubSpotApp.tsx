@@ -43,7 +43,7 @@ function HubSpotApp() {
                   <p>This is where external HubSpot review components will be embedded and tested.</p>
                   <div className="placeholder-features">
                     {/* testing iframe authentication */}
-                    <iframe src="https://app.hubspotqa.com/marketplace-external-review-public/sign-in/potat?_externalReviewDebug=true" title="HubSpot OAuth Callback" width="400" height="400"></iframe>
+                    <iframe src="https://app.hubspotqa.com/marketplace-external-review-public/sign-in/potat?_externalReviewDebug=true" title="HubSpot OAuth Callback" style={{ width: '100%', minWidth: 400 }} height="400"></iframe>
                   </div>
                 </div>
               </div>
