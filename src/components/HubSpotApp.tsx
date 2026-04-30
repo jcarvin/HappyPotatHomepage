@@ -57,7 +57,7 @@ function HubSpotApp() {
 
             <div className="placeholder-features">
               {/* testing iframe authentication */}
-              <iframe src={iframeSrc} title="HubSpot OAuth Callback" style={{ width: '100%', minWidth: 400 }} height="400"></iframe>
+              <iframe src={iframeSrc} title="HubSpot OAuth Callback" style={{ width: '100%', minWidth: 480 }} height="600"></iframe>
             </div>
             <div className="local-dev-toggle">
               <label className="local-dev-label">
