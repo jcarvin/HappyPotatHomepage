@@ -427,6 +427,123 @@ body {
   gap: 0.5rem;
 }
 
+.slug-loader {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+  padding: 1rem 1.25rem;
+  background: linear-gradient(135deg, #fdf6ec, #f5ead4);
+  border: 1px solid #e6d6b8;
+  border-radius: 10px;
+}
+
+.slug-loader-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #8B4513;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.slug-loader-controls {
+  display: flex;
+  align-items: stretch;
+  background: white;
+  border: 1px solid #d9c8a8;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.slug-loader-controls:focus-within {
+  border-color: #8B4513;
+  box-shadow: 0 0 0 3px rgba(139, 69, 19, 0.15);
+}
+
+.slug-loader-prefix {
+  display: flex;
+  align-items: center;
+  padding: 0 0.75rem;
+  background: #f5ead4;
+  color: #8B4513;
+  font-family: 'SFMono-Regular', Menlo, monospace;
+  font-size: 0.9rem;
+  border-right: 1px solid #e6d6b8;
+}
+
+.slug-loader-input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.65rem 0.85rem;
+  border: none;
+  outline: none;
+  font-size: 1rem;
+  font-family: 'SFMono-Regular', Menlo, monospace;
+  color: #4a2e0f;
+  background: transparent;
+}
+
+.slug-loader-input::placeholder {
+  color: #b9a684;
+}
+
+.slug-loader-button {
+  padding: 0 1.25rem;
+  border: none;
+  background: linear-gradient(135deg, #8B4513, #A0522D);
+  color: white;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+}
+
+.slug-loader-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15);
+}
+
+.slug-loader-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.slug-loader-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.slug-loader-hint {
+  font-size: 0.8rem;
+  color: #8a7a5e;
+  margin: 0;
+}
+
+.slug-loader-hint code {
+  background: #fff;
+  border: 1px solid #e6d6b8;
+  padding: 0.05rem 0.35rem;
+  border-radius: 3px;
+  font-size: 0.78rem;
+  color: #8B4513;
+}
+
+.review-iframe-wrapper {
+  background: #fafafa;
+  border: 1px solid #e6d6b8;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+}
+
+.review-iframe {
+  display: block;
+  width: 100%;
+  min-width: 480px;
+  border: 0;
+}
+
 .placeholder-feature {
   background: #F5F5DC;
   padding: 0.5rem 1rem;
