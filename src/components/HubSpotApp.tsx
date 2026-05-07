@@ -76,7 +76,7 @@ function HubSpotApp() {
 
             <form className="slug-loader" onSubmit={handleLoadSlug}>
               <label className="slug-loader-label" htmlFor="marketplace-slug-input">
-                Marketplace app slug
+                Marketplace QA app slug
               </label>
               <div className="slug-loader-controls">
                 <span className="slug-loader-prefix">/sign-in/</span>
@@ -102,7 +102,7 @@ function HubSpotApp() {
               <p className="slug-loader-hint">
                 Currently loaded: <code>{loadedSlug}</code>
                 {' · '}
-                <code>?_externalReviewDebug=true</code> is always appended.
+                <code>?_externalReviewDebug=true</code> is always appended. This UI is relegated to QA only.
               </p>
             </form>
 
